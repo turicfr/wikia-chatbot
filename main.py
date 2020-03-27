@@ -1,7 +1,8 @@
+import sys
 import json
 import time
 from threading import Timer
-from client import Client
+from client import Client, ClientError
 
 class ChatBot(Client):
     def __init__(self, config):
@@ -37,10 +38,11 @@ def main():
             with open("config.json") as file:
                 config = json.load(file)
         except:
-            raise Exception(f"Cannot read {filename}")
+            raise ClientError("Cannot read config")
         ChatBot(config).start()
-    except Exception as e:
+    except ClientError as e:
         print(f"Error: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

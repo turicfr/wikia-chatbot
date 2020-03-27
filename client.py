@@ -6,6 +6,9 @@ from threading import Timer
 from abc import ABC, abstractmethod
 import requests
 
+class ClientError(Exception):
+    pass
+
 class Client(ABC):
     def __init__(self, username, password, site, youtube_key=None):
         self.username = username
@@ -87,7 +90,7 @@ class Client(ABC):
         data["lgtoken"] = response["login"]["token"]
         response = self.session.post(self.site + "api.php", data=data).json()
         if response["login"]["result"] != "Success":
-            raise Exception("Log in failed")
+            raise ClientError("Log in failed")
         wikia_data = self._wikia_request()
         api_data = self._api_request()
         self.chat_url = f'http://{wikia_data["chatServerHost"]}/socket.io/'
@@ -100,8 +103,8 @@ class Client(ABC):
             "roomId": wikia_data["roomId"],
             "serverId": api_data["query"]["wikidesc"]["id"],
             "wikiId": api_data["query"]["wikidesc"]["id"],
-            "sid": self._get_sid(),
         }
+        self.params["sid"] = self._get_sid()
         self.connected = True
         self.ping_timer = Timer(24, self.ping)
         self.ping_timer.daemon = True
@@ -134,8 +137,7 @@ class Client(ABC):
 
     def start(self):
         if not self.connected:
-            raise Exception("Not connected")
-        print("Waiting for events...")
+            raise ClientError("Not connected")
         while self.connected:
             code, message = self.get()
             if message is None:
@@ -155,7 +157,7 @@ class Client(ABC):
             elif event == "chat:add":
                 self.on_message(data)
             else:
-                raise Exception("Unknown event")
+                raise ClientError("Unknown event")
 
     @abstractmethod
     def on_join(self, data):
