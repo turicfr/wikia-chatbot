@@ -1,29 +1,15 @@
-import sys
 import json
 import time
 from threading import Timer
 from client import Client
 
 class ChatBot(Client):
-    def __init__(self, config_filename):
-        config = self.get_config(config_filename)
-        username = config["username"]
-        password = config["password"]
-        site = "https://{}.fandom.com/".format(config["wiki"])
-        youtube_key = config["youtube-key"]
-        super().__init__(username, password, site, youtube_key)
+    def __init__(self, config):
+        super().__init__(config["username"], config["password"], f'https://{config["wiki"]}.fandom.com/', config["youtube-key"])
         self.login()
         log_timer = Timer(3600, self.chat_log)
         log_timer.daemon = True
         log_timer.start()
-
-    @staticmethod
-    def get_config(filename):
-        try:
-            with open(filename) as file:
-                return json.load(file)
-        except:
-            raise Exception(f"Cannot get {filename}")
 
     def on_join(self, data):
         print(f'{time.strftime("[%Y-%m-%d %H:%M:%S]", time.gmtime())} -!- {data["attrs"]["name"]} has joined Special:Chat')
@@ -47,7 +33,12 @@ class ChatBot(Client):
 
 def main():
     try:
-        ChatBot("config.json").start()
+        try:
+            with open("config.json") as file:
+                config = json.load(file)
+        except:
+            raise Exception(f"Cannot read {filename}")
+        ChatBot(config).start()
     except Exception as e:
         print(f"Error: {e}")
 

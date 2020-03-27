@@ -88,7 +88,6 @@ class Client(ABC):
         response = self.session.post(self.site + "api.php", data=data).json()
         if response["login"]["result"] != "Success":
             raise Exception("Log in failed")
-        # self.session.cookies.save()
         wikia_data = self._wikia_request()
         api_data = self._api_request()
         self.chat_url = f'http://{wikia_data["chatServerHost"]}/socket.io/'
@@ -101,8 +100,8 @@ class Client(ABC):
             "roomId": wikia_data["roomId"],
             "serverId": api_data["query"]["wikidesc"]["id"],
             "wikiId": api_data["query"]["wikidesc"]["id"],
+            "sid": self._get_sid(),
         }
-        self.params["sid"] = self._get_sid()
         self.connected = True
         self.ping_timer = Timer(24, self.ping)
         self.ping_timer.daemon = True
