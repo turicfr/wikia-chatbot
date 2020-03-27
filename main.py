@@ -7,6 +7,8 @@ from client import Client, ClientError
 class ChatBot(Client):
     def __init__(self, config):
         super().__init__(config["username"], config["password"], f'https://{config["wiki"]}.fandom.com/', config["youtube-key"])
+
+    def start(self):
         self.login()
         log_timer = Timer(3600, self.chat_log)
         log_timer.daemon = True
@@ -25,9 +27,9 @@ class ChatBot(Client):
         pass
 
     def on_message(self, data):
-        print(f'Received a message from {data["attrs"]["name"]}: {data["attrs"]["text"]}')
+        print(f'Received a message from {data["attrs"]["name"]}: "{data["attrs"]["text"]}"')
         if data["attrs"]["text"].startswith("!hello"):
-            self.send_message("Hello there")
+            self.send_message(f'Hello there, {data["attrs"]["name"]}')
 
     def chat_log(self):
         pass
