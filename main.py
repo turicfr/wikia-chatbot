@@ -4,12 +4,12 @@ import html
 from functools import wraps
 from threading import Timer
 from datetime import datetime
-from enum import Enum
+from enum import IntEnum
 from client import Client, ClientError
 
 commands = {}
 
-class Rank(Enum):
+class Rank(IntEnum):
     REGULAR = 1
     MODERATOR = 2
     ADMIN = 3

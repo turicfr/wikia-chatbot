@@ -100,7 +100,10 @@ class Client(ABC):
             json.dump(content, file)
 
         thes = tuple(content["query"]["pages"].values())[0]
-        return thes["revisions"][0].get("*")
+        try:
+            return thes["revisions"][0]["*"]
+        except KeyError:
+            return None
 
     def edit(self, title, page_text, summary="", minor=False, bot=True, section=False):
         data = {
