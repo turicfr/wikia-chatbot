@@ -57,7 +57,6 @@ class Client(ABC):
             "key": wikia_data["chatkey"],
             "roomId": wikia_data["roomId"],
             "serverId": api_data["query"]["wikidesc"]["id"],
-            "wikiId": api_data["query"]["wikidesc"]["id"],
         })
         self.sio.connect(urlunparse(url))
 
@@ -96,9 +95,6 @@ class Client(ABC):
         if section is not None:
             data["rvsection"] = section
         content = self.session.post(self.site + "api.php", data=data).json()
-        with open("edit.json", "w") as file:
-            json.dump(content, file)
-
         thes = tuple(content["query"]["pages"].values())[0]
         try:
             return thes["revisions"][0]["*"]
@@ -171,14 +167,16 @@ class Client(ABC):
             "ban": self.on_ban,
             "chat:add": self.on_message,
         }.get(data["event"])
-        print(data["event"])
         if handler is not None:
             handler(json.loads(data["data"]))
 
-    def on_initial(self, data):
-        pass
-
     def on_join(self, data):
+        self.send({
+            "msgType": "command",
+            "command": "initquery",
+        })
+
+    def on_initial(self, data):
         pass
 
     def on_logout(self, data):
