@@ -141,6 +141,15 @@ class Client(ABC):
             "userToKick": username,
         })
 
+    def ban(self, username, duration, reason):
+        self.send({
+            "msgType": "command",
+            "command": "ban",
+            "userToBan": username,
+            "time": duration,
+            "reason": reason,
+        })
+
     def logout(self):
         self.send({
             "msgType": "command",

@@ -2,14 +2,11 @@ import sys
 import os
 import json
 import html
-from functools import wraps
 from threading import Timer
 from time import time
 from datetime import datetime
 from enum import IntEnum
 from client import Client, ClientError
-
-commands = {}
 
 def format_seconds(seconds):
     seconds = int(seconds)
@@ -38,12 +35,90 @@ class Rank(IntEnum):
             return cls.MODERATOR
         return cls.USER
 
+class RankError(Exception):
+    pass
+
 class User:
-    def __init__(self, name, rank, connected=True, seen=datetime.utcnow()):
+    def __init__(self, name, rank, seen, connected=True):
         self.name = name
         self.rank = rank
-        self.connected = connected
         self.seen = seen
+        self.connected = connected
+
+    def __str__(self):
+        return self.name
+
+commands = {}
+
+class Argument:
+    def __init__(self, required=True, rest=False, type=str):
+        if not required and rest:
+            raise Argument.Error("required must not be used in conjunction with rest.")
+        self.required = required and not rest
+        self.rest = rest
+        self.type = type
+
+class ArgumentError(Exception):
+    pass
+
+class Command:
+    def __init__(self, name, min_rank=Rank.USER, **kwargs):
+        self.name = name
+        self.min_rank = min_rank
+        state = 0
+        for arg_name, arg in kwargs.items():
+            if arg.required:
+                if state > 0:
+                    raise ArgumentError(f'The required "{arg_name}" argument is after an optional/rest argument.')
+                state = 0
+            elif not arg.required:
+                if state > 1:
+                    raise ArgumentError(f'The optional "{arg_name}" argument is after the rest argument.')
+                state = 1
+            elif arg.rest:
+                if state >= 2:
+                    raise ArgumentError("At most one rest argument is allowed.")
+                state = 2
+        self.args = kwargs
+        self.handler = None
+
+    def __call__(self, *args, **kwargs):
+        if self.handler is None:
+            return self.bind(*args, **kwargs)
+        return self.invoke(*args, **kwargs)
+
+    def bind(self, handler):
+        self.handler = handler
+        commands[self.name] = self
+        return self
+
+    def invoke(self, obj, users, data):
+        user = users.get(data["attrs"]["name"].lower())
+        if user is None or user.rank < self.min_rank:
+            raise RankError()
+        args = {}
+        message = data["attrs"]["text"].split()[1:]
+        if len(message) > len(self.args) and not (self.args and list(self.args.values())[-1].rest):
+            raise ArgumentError(f"Too many arguments.")
+        for i, (arg_name, arg) in enumerate(self.args.items()):
+            if len(message) <= i:
+                if arg.required or arg.rest:
+                    raise ArgumentError(f"Missing required argument: {arg_name}.")
+                else:
+                    break
+            value = " ".join(message[i:]) if arg.rest else message[i]
+            if arg.type is User:
+                name = value
+                value = users.get(name.lower())
+                if value is None:
+                    value = User(name, None, None, False)
+            else:
+                try:
+                    value = arg.type(value)
+                except:
+                    raise ArgumentError(f"Invalid argument: {arg_name}.")
+            args[arg_name] = value
+        self.handler(obj, data, **args)
 
 class ChatBot(Client):
     def __init__(self, config):
@@ -59,53 +134,34 @@ class ChatBot(Client):
         self.log_chat()
         Timer(3600 - datetime.utcnow().minute * 60 - datetime.utcnow().second, self.hourly).start()
 
-    def command(name, min_rank=Rank.USER):
-        def inner(handler):
-            @wraps(handler)
-            def wrapper(self, data):
-                username = data["attrs"]["name"]
-                user = self.users.get(username.lower())
-                if user is not None and user.rank >= min_rank:
-                    handler(self, data)
-            commands[name] = wrapper
-            return wrapper
-        return inner
-
-    @command("hello")
+    @Command("hello")
     def hello(self, data):
         username = data["attrs"]["name"]
         user = self.users[username.lower()]
         self.send_message(f'Hello there, {user.name}')
 
-    @command("commands")
+    @Command("commands")
     def commands(self, data):
         username = data["attrs"]["name"]
         self.send_message(f'{username}, all defined commands are: {", ".join(f"!{command}" for command in commands)}')
 
-    @command("seen")
-    def seen(self, data):
-        message = data["attrs"]["text"]
-        username = message.split()[-1]
-        user = self.users.get(username.lower())
-        if user is None:
-            self.send_message(f"I haven't seen {username} since I have been here.")
+    @Command("seen", user=Argument(type=User))
+    def seen(self, data, user):
+        if user.seen is None:
+            self.send_message(f"I haven't seen {user.name} since I have been here.")
         elif user.connected:
             self.send_message(f"{user.name} is connected to the chat.")
         else:
             self.send_message(f"I last saw {user.name} {format_seconds((datetime.utcnow() - user.seen).total_seconds())} ago.")
 
-    @command("tell")
-    def tell(self, data):
-        _, target, message = data["attrs"]["text"].split(maxsplit=2)
-        target = target.replace("_", " ")
+    @Command("tell", target=Argument(type=User), message=Argument(rest=True))
+    def tell(self, data, target, message):
         from_user = data["attrs"]["name"]
-
-        if from_user == target:
+        if from_user == target.name:
             self.send_message(f"{from_user}, you can't leave a message to yourself.")
             return
 
-        user = self.users.get(target.lower())
-        if user is not None and user.connected:
+        if target.connected:
             self.send_message(f"{target} is already here.")
             return
 
@@ -116,10 +172,10 @@ class ChatBot(Client):
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             tell = {}
 
-        if target.lower() not in tell:
-            tell[target.lower()] = []
+        if target.name.lower() not in tell:
+            tell[target.name.lower()] = []
 
-        tell[target.lower()].append({
+        tell[target.name.lower()].append({
             "from": from_user,
             "message": message,
             "time": int(time()),
@@ -128,18 +184,23 @@ class ChatBot(Client):
             json.dump(tell, tell_file)
         self.send_message(f"I'll tell {target} that the next time I see them.")
 
-    # @command("updatelogs", Rank.MODERATOR)
-    @command("updatelogs")
+    @Command("updatelogs") # Rank.MODERATOR
     def update_logs(self, data):
         self.log_chat()
 
-    @command("kick", Rank.MODERATOR)
-    def kick(self, data):
-        message = data["attrs"]["text"]
-        username = message.split()[-1]
-        self.kick(username)
+    @Command("kick", Rank.MODERATOR, target=Argument(type=User))
+    def kick(self, data, target):
+        self.kick(target.name)
 
-    @command("exit", Rank.MODERATOR)
+    @Command("ban", Rank.MODERATOR,
+        user=Argument(type=User),
+        hours=Argument(type=int),
+        reason=Argument(rest=True),
+    )
+    def ban(self, data, user, hours, reason):
+        self.ban(user.name, hours, reason)
+
+    @Command("exit", Rank.MODERATOR)
     def exit(self, data):
         self.logout()
         sys.exit()
@@ -183,7 +244,7 @@ class ChatBot(Client):
         username = data["attrs"]["name"]
         self.log([f"{username} has joined Special:Chat"], f"{{timestamp}} -!- {{line}}")
         rank = Rank.from_attrs(data["attrs"])
-        self.users[username.lower()] = User(username, rank)
+        self.users[username.lower()] = User(username, rank, datetime.utcnow())
 
         try:
             with open("tell.json", encoding="utf-8") as tell_file:
@@ -206,7 +267,7 @@ class ChatBot(Client):
             attrs = user["attrs"]
             username = attrs["name"]
             rank = Rank.from_attrs(attrs)
-            self.users[username.lower()] = User(username, rank)
+            self.users[username.lower()] = User(username, rank, datetime.utcnow())
 
     def on_logout(self, data):
         super().on_logout(data)
@@ -228,9 +289,15 @@ class ChatBot(Client):
         self.log(message.splitlines(), f"{{timestamp}} <{username}> {{line}}")
         if message.lstrip().startswith("!"):
             command_name = message.split()[0][1:]
-            handler = commands.get(command_name)
-            if handler is not None:
-                handler(self, data)
+            command = commands.get(command_name)
+            if command is None:
+                return
+            try:
+                command(self, self.users, data)
+            except RankError:
+                self.send_message(f"{username}, you don't have permission for !{command_name}.")
+            except ArgumentError as e:
+                self.send_message(f"{username}, {e}")
 
 def main():
     try:
