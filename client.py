@@ -24,7 +24,6 @@ class Client(ABC):
             self.sio.on(event, handler)
 
     def login(self):
-        print(f"Logging in as {self.username}...")
         data = {
             "action": "login",
             "lgname": self.username,
@@ -149,13 +148,13 @@ class Client(ABC):
         })
 
     def on_connect(self):
-        print(f"Logged in as {self.username}")
+        pass
 
     def on_connect_error(self):
-        print("connect_error")
+        pass
 
     def on_disconnect(self):
-        print("disconnect")
+        pass
 
     def on_event(self, data):
         handler = {

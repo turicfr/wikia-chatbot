@@ -51,6 +51,7 @@ class ChatBot(Client):
         self.users = {}
 
     def start(self):
+        print(f"Logging in as {self.username}...")
         self.login()
         Timer(3600 - datetime.utcnow().minute * 60 - datetime.utcnow().second, self.hourly).start()
 
@@ -110,7 +111,7 @@ class ChatBot(Client):
 
         try:
             # TODO: relative (no __file__?)
-            with open("tell.json") as tell_file:
+            with open("tell.json", encoding="utf-8") as tell_file:
                 tell = json.load(tell_file)
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             tell = {}
@@ -123,7 +124,7 @@ class ChatBot(Client):
             "message": message,
             "time": int(time()),
         })
-        with open("tell.json", "w") as tell_file:
+        with open("tell.json", "w", encoding="utf-8") as tell_file:
             json.dump(tell, tell_file)
         self.send_message(f"I'll tell {target} that the next time I see them.")
 
@@ -140,20 +141,21 @@ class ChatBot(Client):
 
     @command("exit", Rank.MODERATOR)
     def exit(self, data):
+        self.logout()
         sys.exit()
 
     def log_chat(self):
         title = f'Project:Chat/Logs/{datetime.utcnow():%d %B %Y}'
         with open("chat.log", encoding="utf-8") as log_file:
             log_data = log_file.read()
-        with open("chat.log", "w") as log_file:
+        with open("chat.log", "w", encoding="utf-8") as log_file:
             pass
         page_text = self.view(title)
         if page_text:
             end = page_text.rindex("</pre>")
-            page_text = f"{page_text[:end]}\n{log_data}{page_text[end:]}"
+            page_text = f"{page_text[:end]}{log_data}{page_text[end:]}"
         else:
-            page_text = f'<pre>\n{log_data}\n</pre>\n[[Category:Chat logs/{datetime.utcnow():%Y %d %B}]]'
+            page_text = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs/{datetime.utcnow():%Y %d %B}]]'
         self.edit(title, page_text, summary="Updating chat logs")
 
     @staticmethod
@@ -164,6 +166,18 @@ class ChatBot(Client):
                 print(format.format(timestamp=timestamp, line=html.unescape(line)))
                 log_file.write(f"{format.format(timestamp=timestamp, line=html.escape(line, quote=False))}\n")
 
+    def on_connect(self):
+        super().on_connect()
+        print(f"Logged in as {self.username}")
+
+    def on_connect_error(self):
+        super().on_connect_error()
+        print("Connect error")
+
+    def on_disconnect(self):
+        super().on_disconnect()
+        print("Logged off")
+
     def on_join(self, data):
         super().on_join(data)
         username = data["attrs"]["name"]
@@ -172,7 +186,7 @@ class ChatBot(Client):
         self.users[username.lower()] = User(username, rank)
 
         try:
-            with open("tell.json") as tell_file:
+            with open("tell.json", encoding="utf-8") as tell_file:
                 tell = json.load(tell_file)
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             tell = {}
@@ -183,7 +197,7 @@ class ChatBot(Client):
         for message in messages:
             self.send_message(f'{username}, {message["from"]} wanted to tell you @ ' \
                 f'{datetime.utcfromtimestamp(message["time"]):%Y-%m-%d %H:%M:%S} UTC: {message["message"]}')
-        with open("tell.json", "w") as tell_file:
+        with open("tell.json", "w", encoding="utf-8") as tell_file:
             json.dump(tell, tell_file)
 
     def on_initial(self, data):
