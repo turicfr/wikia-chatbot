@@ -57,6 +57,14 @@ class Argument:
         self.required = required and not rest
         self.rest = rest
         self.type = type
+        self.name = None
+
+    def __str__(self):
+        if self.required:
+            return f"<{self.name}>"
+        if self.rest:
+            return f"{self.name}..."
+        return f"[{self.name}]"
 
 class ArgumentError(Exception):
     pass
@@ -67,28 +75,34 @@ class Command:
         self.min_rank = min_rank
         state = 0
         for arg_name, arg in kwargs.items():
+            arg.name = arg_name
             if arg.required:
                 if state > 0:
-                    raise ArgumentError(f'The required "{arg_name}" argument is after an optional/rest argument.')
+                    raise ArgumentError(f'The required "{arg.name}" argument is after an optional/rest argument.')
                 state = 0
             elif not arg.required:
                 if state > 1:
-                    raise ArgumentError(f'The optional "{arg_name}" argument is after the rest argument.')
+                    raise ArgumentError(f'The optional "{arg.name}" argument is after the rest argument.')
                 state = 1
             elif arg.rest:
                 if state >= 2:
                     raise ArgumentError("At most one rest argument is allowed.")
                 state = 2
-        self.args = kwargs
+        self.args = list(kwargs.values())
         self.handler = None
+        self.desc = None
 
     def __call__(self, *args, **kwargs):
         if self.handler is None:
             return self.bind(*args, **kwargs)
         return self.invoke(*args, **kwargs)
 
+    def __str__(self):
+        return f"!{self.name}"
+
     def bind(self, handler):
         self.handler = handler
+        self.desc = handler.__doc__
         commands[self.name] = self
         return self
 
@@ -98,12 +112,12 @@ class Command:
             raise RankError()
         args = {}
         message = data["attrs"]["text"].split()[1:]
-        if len(message) > len(self.args) and not (self.args and list(self.args.values())[-1].rest):
+        if len(message) > len(self.args) and not (self.args and self.args[-1].rest):
             raise ArgumentError(f"Too many arguments.")
-        for i, (arg_name, arg) in enumerate(self.args.items()):
+        for i, arg in enumerate(self.args):
             if len(message) <= i:
                 if arg.required or arg.rest:
-                    raise ArgumentError(f"Missing required argument: {arg_name}.")
+                    raise ArgumentError(f"Missing required argument: {arg.name}.")
                 else:
                     break
             value = " ".join(message[i:]) if arg.rest else message[i]
@@ -116,8 +130,8 @@ class Command:
                 try:
                     value = arg.type(value)
                 except:
-                    raise ArgumentError(f"Invalid argument: {arg_name}.")
-            args[arg_name] = value
+                    raise ArgumentError(f"Invalid argument: {arg.name}.")
+            args[arg.name] = value
         self.handler(obj, data, **args)
 
 class ChatBot(Client):
@@ -136,17 +150,29 @@ class ChatBot(Client):
 
     @Command("hello")
     def hello(self, data):
+        """Reply with message."""
         username = data["attrs"]["name"]
         user = self.users[username.lower()]
         self.send_message(f'Hello there, {user.name}')
 
-    @Command("commands")
-    def commands(self, data):
+    @Command("help", command=Argument(required=False))
+    def help(self, data, command=None):
+        """Show this help."""
         username = data["attrs"]["name"]
-        self.send_message(f'{username}, all defined commands are: {", ".join(f"!{command}" for command in commands)}')
+        if command is None:
+            commands_desc = "\n".join(f"{command}: {command.desc}" for command in commands.values())
+            self.send_message(f'{username}, all defined commands are:\n{commands_desc}')
+        else:
+            command_name = command
+            command = commands.get(command_name)
+            if command is None:
+                self.send_message(f"Command {command_name} is unavailable.")
+                return
+            self.send_message(f'{command.desc}\n{command} {" ".join(map(str, command.args))}')
 
     @Command("seen", user=Argument(type=User))
     def seen(self, data, user):
+        """Get the time a user was last seen in chat."""
         if user.seen is None:
             self.send_message(f"I haven't seen {user.name} since I have been here.")
         elif user.connected:
@@ -156,6 +182,7 @@ class ChatBot(Client):
 
     @Command("tell", target=Argument(type=User), message=Argument(rest=True))
     def tell(self, data, target, message):
+        """Deliver an offline user a message when he joins the chat."""
         from_user = data["attrs"]["name"]
         if from_user == target.name:
             self.send_message(f"{from_user}, you can't leave a message to yourself.")
@@ -186,10 +213,12 @@ class ChatBot(Client):
 
     @Command("updatelogs") # Rank.MODERATOR
     def update_logs(self, data):
+        """Log the chat now."""
         self.log_chat()
 
     @Command("kick", Rank.MODERATOR, target=Argument(type=User))
     def kick(self, data, target):
+        """Kick a user."""
         self.kick(target.name)
 
     @Command("ban", Rank.MODERATOR,
@@ -198,10 +227,12 @@ class ChatBot(Client):
         reason=Argument(rest=True),
     )
     def ban(self, data, user, hours, reason):
+        """Ban a user."""
         self.ban(user.name, hours, reason)
 
     @Command("exit", Rank.MODERATOR)
     def exit(self, data):
+        """Stop this bot."""
         self.logout()
         sys.exit()
 
