@@ -7,7 +7,7 @@ from datetime import datetime
 
 from client import Client, ClientError
 from users import User, Rank, RankError
-from commands import commands, Argument, ArgumentError, Command
+from commands import Argument, ArgumentError, Command
 
 def format_seconds(seconds):
     seconds = int(seconds)
@@ -48,11 +48,11 @@ class ChatBot(Client):
         """Show this help."""
         username = data["attrs"]["name"]
         if command is None:
-            commands_desc = "\n".join(f"{command}: {command.desc}" for command in commands.values())
+            commands_desc = "\n".join(f"{command}: {command.desc}" for command in Command.commands.values())
             self.send_message(f'{username}, all defined commands are:\n{commands_desc}')
         else:
             command_name = command
-            command = commands.get(command_name)
+            command = Command.commands.get(command_name)
             if command is None:
                 self.send_message(f"Command {command_name} is unavailable.")
                 return
@@ -208,7 +208,7 @@ class ChatBot(Client):
         self.log(message.splitlines(), f"{{timestamp}} <{username}> {{line}}")
         if message.lstrip().startswith("!"):
             command_name = message.split()[0][1:]
-            command = commands.get(command_name)
+            command = Command.commands.get(command_name)
             if command is None:
                 return
             try:

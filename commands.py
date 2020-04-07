@@ -1,6 +1,4 @@
-from users import User
-
-commands = {}
+from users import User, Rank
 
 class Argument:
     def __init__(self, required=True, rest=False, type=str):
@@ -22,6 +20,8 @@ class ArgumentError(Exception):
     pass
 
 class Command:
+    commands = {}
+
     def __init__(self, name, min_rank=Rank.USER, **kwargs):
         self.name = name
         self.min_rank = min_rank
@@ -55,7 +55,7 @@ class Command:
     def bind(self, handler):
         self.handler = handler
         self.desc = handler.__doc__
-        commands[self.name] = self
+        self.commands[self.name] = self
         return self
 
     def invoke(self, obj, users, data):
