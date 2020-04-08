@@ -1,4 +1,19 @@
-from users import User, Rank, RankError
+from .users import User, Rank, RankError
+
+stack = []
+
+def Plugin():
+    stack.append({})
+    called = False
+    def inner(cls):
+        nonlocal called
+        if called:
+            raise Exception("Plugin used more than once.")
+        called = True
+        class Wrapper(cls):
+            commands = stack.pop()
+        return Wrapper
+    return inner
 
 class Argument:
     def __init__(self, required=True, rest=False, type=str):
@@ -20,8 +35,6 @@ class ArgumentError(Exception):
     pass
 
 class Command:
-    commands = {}
-
     def __init__(self, min_rank=Rank.USER, **kwargs):
         self.min_rank = min_rank
         state = 0
@@ -56,10 +69,10 @@ class Command:
         self.handler = handler
         self.name = handler.__name__
         self.desc = handler.__doc__
-        self.commands[self.name] = self
+        stack[-1][self.name] = self
         return self
 
-    def invoke(self, obj, users, data):
+    def invoke(self, plugin, users, data):
         user = users.get(data["attrs"]["name"].lower())
         if user is None or user.rank < self.min_rank:
             raise RankError()
@@ -85,4 +98,4 @@ class Command:
                 except:
                     raise ArgumentError(f"Invalid argument: {arg.name}.")
             args[arg.name] = value
-        self.handler(obj, data, **args)
+        self.handler(plugin, data, **args)
