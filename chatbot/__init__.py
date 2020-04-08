@@ -5,8 +5,8 @@ from .users import User, Rank, RankError
 from .plugins import Plugin, Command, Argument, ArgumentError
 
 class ChatBot(Client):
-    def __init__(self, config):
-        super().__init__(config["username"], config["password"], f'https://{config["wiki"]}.fandom.com/')
+    def __init__(self, username, password, site):
+        super().__init__(username, password, site)
         self.users = {}
         self.plugins = []
 

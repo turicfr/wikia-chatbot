@@ -11,7 +11,10 @@ def main():
                 config = json.load(file)
         except:
             raise ClientError("Cannot read config.")
-        bot = ChatBot(config)
+        username = config["username"]
+        password = config["password"]
+        site = f'https://{config["wiki"]}.fandom.com/'
+        bot = ChatBot(username, password, site)
         bot.add_plugin(MyPlugin())
         bot.start()
     except ClientError as e:
