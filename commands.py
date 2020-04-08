@@ -1,4 +1,4 @@
-from users import User, Rank
+from users import User, Rank, RankError
 
 class Argument:
     def __init__(self, required=True, rest=False, type=str):
@@ -22,8 +22,7 @@ class ArgumentError(Exception):
 class Command:
     commands = {}
 
-    def __init__(self, name, min_rank=Rank.USER, **kwargs):
-        self.name = name
+    def __init__(self, min_rank=Rank.USER, **kwargs):
         self.min_rank = min_rank
         state = 0
         for arg_name, arg in kwargs.items():
@@ -42,6 +41,7 @@ class Command:
                 state = 2
         self.args = list(kwargs.values())
         self.handler = None
+        self.name = None
         self.desc = None
 
     def __call__(self, *args, **kwargs):
@@ -54,6 +54,7 @@ class Command:
 
     def bind(self, handler):
         self.handler = handler
+        self.name = handler.__name__
         self.desc = handler.__doc__
         self.commands[self.name] = self
         return self

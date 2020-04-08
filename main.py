@@ -36,14 +36,14 @@ class ChatBot(Client):
         self.log_chat()
         Timer(3600 - datetime.utcnow().minute * 60 - datetime.utcnow().second, self.hourly).start()
 
-    @Command("hello")
+    @Command()
     def hello(self, data):
         """Reply with message."""
         username = data["attrs"]["name"]
         user = self.users[username.lower()]
         self.send_message(f'Hello there, {user.name}')
 
-    @Command("help", command=Argument(required=False))
+    @Command(command=Argument(required=False))
     def help(self, data, command=None):
         """Show this help."""
         username = data["attrs"]["name"]
@@ -58,7 +58,7 @@ class ChatBot(Client):
                 return
             self.send_message(f'{command.desc}\n{command} {" ".join(map(str, command.args))}')
 
-    @Command("seen", user=Argument(type=User))
+    @Command(user=Argument(type=User))
     def seen(self, data, user):
         """Get the time a user was last seen in chat."""
         if user.seen is None:
@@ -68,7 +68,7 @@ class ChatBot(Client):
         else:
             self.send_message(f"I last saw {user.name} {format_seconds((datetime.utcnow() - user.seen).total_seconds())} ago.")
 
-    @Command("tell", target=Argument(type=User), message=Argument(rest=True))
+    @Command(target=Argument(type=User), message=Argument(rest=True))
     def tell(self, data, target, message):
         """Deliver an offline user a message when he joins the chat."""
         from_user = data["attrs"]["name"]
@@ -99,17 +99,17 @@ class ChatBot(Client):
             json.dump(tell, tell_file)
         self.send_message(f"I'll tell {target} that the next time I see them.")
 
-    @Command("updatelogs") # Rank.MODERATOR
-    def update_logs(self, data):
+    @Command() # min_rank=Rank.MODERATOR
+    def updatelogs(self, data):
         """Log the chat now."""
         self.log_chat()
 
-    @Command("kick", Rank.MODERATOR, target=Argument(type=User))
+    @Command(min_rank=Rank.MODERATOR, target=Argument(type=User))
     def kick(self, data, target):
         """Kick a user."""
         self.kick(target.name)
 
-    @Command("ban", Rank.MODERATOR,
+    @Command(min_rank=Rank.MODERATOR,
         user=Argument(type=User),
         hours=Argument(type=int),
         reason=Argument(rest=True),
@@ -118,7 +118,7 @@ class ChatBot(Client):
         """Ban a user."""
         self.ban(user.name, hours, reason)
 
-    @Command("exit", Rank.MODERATOR)
+    @Command(min_rank=Rank.MODERATOR)
     def exit(self, data):
         """Stop this bot."""
         self.logout()
