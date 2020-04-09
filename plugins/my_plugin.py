@@ -96,7 +96,10 @@ class MyPlugin:
         timestamp = f"[{datetime.utcnow():%Y-%m-%d %H:%M:%S}]"
         with open("chat.log", "a", encoding="utf-8") as log_file:
             for line in lines:
-                print(format.format(timestamp=timestamp, line=html.unescape(line)))
+                try:
+                    print(format.format(timestamp=timestamp, line=html.unescape(line)))
+                except OSError: # TODO: inversigate this error
+                    pass
                 log_file.write(f"{format.format(timestamp=timestamp, line=html.escape(line, quote=False))}\n")
 
     @Command(sender=Argument(implicit=True))
