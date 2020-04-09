@@ -8,16 +8,23 @@ from chatbot.plugins import Plugin, Command
 class LogPlugin:
     def __init__(self):
         self.client = None
+        self.timer = None
 
     def on_load(self, client):
         self.client = client
 
     def on_connect(self):
-        Timer(3600 - datetime.utcnow().minute * 60 - datetime.utcnow().second, self.hourly).start()
+        self.timer = Timer(3600 - datetime.utcnow().minute * 60 - datetime.utcnow().second, self.hourly)
+        self.timer.start()
+
+    def on_disconnect(self):
+        if self.timer is not None:
+            self.timer.cancel()
 
     def hourly(self):
         self.log_chat(self.client)
-        Timer(3600 - datetime.utcnow().minute * 60 - datetime.utcnow().second, self.hourly).start()
+        self.timer = Timer(3600 - datetime.utcnow().minute * 60 - datetime.utcnow().second, self.hourly)
+        self.timer.start()
 
     def on_join(self, data):
         username = data["attrs"]["name"]

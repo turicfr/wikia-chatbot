@@ -1,5 +1,3 @@
-import sys
-
 from chatbot.users import User, Rank
 from chatbot.plugins import Plugin, Command, Argument
 
@@ -28,5 +26,5 @@ class AdminPlugin:
     @Command(min_rank=Rank.MODERATOR)
     def exit(self):
         """Stop this bot."""
+        print("Logging out...")
         self.client.logout()
-        sys.exit()

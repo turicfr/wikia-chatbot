@@ -165,6 +165,9 @@ class ChatBot:
             "msgType": "command",
             "command": "logout",
         })
+        self.sio.disconnect()
+        self.sio.wait()
+        self.on_disconnect()
 
     def on_connect(self):
         print(f"Logged in as {self.username}.")
