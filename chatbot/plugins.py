@@ -1,3 +1,4 @@
+from enum import Enum, auto
 from datetime import datetime
 
 from .users import User, Rank, RankError
@@ -39,21 +40,55 @@ def Plugin():
     return inner
 
 class Argument:
+    class Kind(Enum):
+        IMPLICIT = auto()
+        REQUIRED = auto()
+        OPTIONAL = auto()
+        REST = auto()
+
     def __init__(self, implicit=False, required=True, rest=False, type=str):
         if sum([implicit, not required, rest]) > 1:
             raise ArgumentError("implicit, required and rest are mutual exclusive.")
-        self.implicit = implicit
-        self.required = required and not rest
-        self.rest = rest
+        if implicit:
+            self.kind = self.Kind.IMPLICIT
+        elif rest:
+            self.kind = self.Kind.REST
+        elif required:
+            self.kind = self.Kind.REQUIRED
+        else:
+            self.kind = self.Kind.OPTIONAL
         self.type = type
         self.name = None
 
+    @property
+    def implicit(self):
+        return self.kind == self.Kind.IMPLICIT
+
+    @property
+    def explicit(self):
+        return not self.implicit
+
+    @property
+    def required(self):
+        return self.kind == self.Kind.REQUIRED
+
+    @property
+    def optional(self):
+        return self.kind == self.Kind.OPTIONAL
+
+    @property
+    def rest(self):
+        return self.kind == self.Kind.REST
+
     def __str__(self):
+        if self.implicit:
+            return f"({self.name})"
         if self.required:
             return f"<{self.name}>"
+        if self.optional:
+            return f"[{self.name}]"
         if self.rest:
             return f"{self.name}..."
-        return f"[{self.name}]"
 
 class ArgumentError(Exception):
     pass
@@ -68,7 +103,7 @@ class Command:
             arg.name = arg_name
             if arg.implicit:
                 if arg.name not in self.IMPLICIT_ARGUMENTS:
-                    raise ArgumentError(f'The implicit "{arg.name}" argument is unknown.')
+                    raise ArgumentError(f'Unknown implicit argument "{arg.name}".')
                 continue
             if arg.name in self.IMPLICIT_ARGUMENTS:
                 raise ArgumentError(f'The explicit "{arg.name}" argument is reserved as implicit.')
@@ -76,14 +111,14 @@ class Command:
                 if state > 0:
                     raise ArgumentError(f'The required "{arg.name}" argument is after an optional/rest argument.')
                 state = 0
-            elif not arg.required:
-                if state > 1:
-                    raise ArgumentError(f'The optional "{arg.name}" argument is after the rest argument.')
-                state = 1
             elif arg.rest:
                 if state >= 2:
                     raise ArgumentError("At most one rest argument is allowed.")
                 state = 2
+            else:
+                if state > 1:
+                    raise ArgumentError(f'The optional "{arg.name}" argument is after the rest argument.')
+                state = 1
         self.args = list(kwargs.values())
         self.handler = None
         self.name = None
@@ -130,7 +165,7 @@ class Command:
             raise RankError()
 
         message = data["attrs"]["text"].split()[1:]
-        explicit_args = list(filter(lambda arg: not arg.implicit, self.args))
+        explicit_args = list(filter(lambda arg: arg.explicit, self.args))
         if len(message) > len(explicit_args) and not (explicit_args and explicit_args[-1].rest):
             raise ArgumentError(f"Too many arguments.")
 

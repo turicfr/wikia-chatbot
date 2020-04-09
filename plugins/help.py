@@ -23,5 +23,5 @@ class HelpPlugin:
             if command is None:
                 self.client.send_message(f"Command {command_name} is unavailable.")
                 return
-            explicit_args = filter(lambda arg: not arg.implicit, command.args)
+            explicit_args = filter(lambda arg: arg.explicit, command.args)
             self.client.send_message(f'{command.desc}\n{command} {" ".join(map(str, explicit_args))}')
