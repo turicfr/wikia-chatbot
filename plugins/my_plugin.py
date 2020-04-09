@@ -43,7 +43,7 @@ class MyPlugin:
 
     def on_join(self, data):
         username = data["attrs"]["name"]
-        self.log([f"{username} has joined Special:Chat"], f"{{timestamp}} -!- {{line}}")
+        self.log([f"{username} has joined Special:Chat"], f"{{timestamp}} -!- {{line}}", datetime.utcnow())
         try:
             with open("tell.json", encoding="utf-8") as tell_file:
                 tell = json.load(tell_file)
@@ -55,7 +55,7 @@ class MyPlugin:
             return
         for message in messages:
             self.client.send_message(f'{username}, {message["from"]} wanted to tell you @ ' \
-                f'{datetime.utcfromtimestamp(message["time"]):%Y-%m-%d %H:%M:%S} UTC: {message["message"]}')
+                f'{datetime.utcfromtimestamp(message["timestamp"]):%Y-%m-%d %H:%M:%S} UTC: {message["message"]}')
         with open("tell.json", "w", encoding="utf-8") as tell_file:
             json.dump(tell, tell_file)
 
@@ -64,7 +64,7 @@ class MyPlugin:
 
     def on_logout(self, data):
         username = data["attrs"]["name"]
-        self.log([f"{username} has left Special:Chat"], f"{{timestamp}} -!- {{line}}")
+        self.log([f"{username} has left Special:Chat"], f"{{timestamp}} -!- {{line}}", datetime.utcnow())
 
     def on_kick(self, data):
         pass
@@ -75,7 +75,8 @@ class MyPlugin:
     def on_message(self, data):
         username = data["attrs"]["name"]
         message = data["attrs"]["text"]
-        self.log(message.splitlines(), f"{{timestamp}} <{username}> {{line}}")
+        timestamp = datetime.utcfromtimestamp(int(data["attrs"]["timeStamp"]) / 1000)
+        self.log(message.splitlines(), f"{{timestamp}} <{username}> {{line}}", timestamp)
 
     def log_chat(self):
         title = f"Project:Chat/Logs/{datetime.utcnow():%d %B %Y}"
@@ -92,8 +93,8 @@ class MyPlugin:
         self.client.edit(title, page_text, summary="Updating chat logs")
 
     @staticmethod
-    def log(lines, format):
-        timestamp = f"[{datetime.utcnow():%Y-%m-%d %H:%M:%S}]"
+    def log(lines, format, timestamp):
+        timestamp = f"[{timestamp:%Y-%m-%d %H:%M:%S}]"
         with open("chat.log", "a", encoding="utf-8") as log_file:
             for line in lines:
                 try:
@@ -125,18 +126,23 @@ class MyPlugin:
             explicit_args = filter(lambda arg: not arg.implicit, command.args)
             self.client.send_message(f'{command.desc}\n{command} {" ".join(map(str, explicit_args))}')
 
-    @Command(user=Argument(type=User))
-    def seen(self, user):
+    @Command(timestamp=Argument(implicit=True), user=Argument(type=User))
+    def seen(self, timestamp, user):
         """Get the time a user was last seen in chat."""
         if user.seen is None:
             self.client.send_message(f"I haven't seen {user} since I have been here.")
         elif user.connected:
             self.client.send_message(f"{user} is connected to the chat.")
         else:
-            self.client.send_message(f"I last saw {user} {format_seconds((datetime.utcnow() - user.seen).total_seconds())} ago.")
+            self.client.send_message(f"I last saw {user} {format_seconds((timestamp - user.seen).total_seconds())} ago.")
 
-    @Command(sender=Argument(implicit=True), target=Argument(type=User), message=Argument(rest=True))
-    def tell(self, sender, target, message):
+    @Command(
+        sender=Argument(implicit=True),
+        timestamp=Argument(implicit=True),
+        target=Argument(type=User),
+        message=Argument(rest=True),
+    )
+    def tell(self, sender, timestamp, target, message):
         """Deliver an offline user a message when he joins the chat."""
         if sender == target:
             self.client.send_message(f"{sender}, you can't leave a message to yourself.")
@@ -159,7 +165,7 @@ class MyPlugin:
         tell[target.name.lower()].append({
             "from": sender.name,
             "message": message,
-            "time": int(datetime.timestamp(datetime.utcnow())),
+            "timestamp": timestamp.timestamp(),
         })
         with open("tell.json", "w", encoding="utf-8") as tell_file:
             json.dump(tell, tell_file)

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from .users import User, Rank, RankError
 
 stack = []
@@ -42,7 +44,7 @@ class Command:
         for arg_name, arg in kwargs.items():
             arg.name = arg_name
             if arg.implicit:
-                if arg.name not in ["data", "sender"]:
+                if arg.name not in ["data", "sender", "timestamp"]:
                     raise ArgumentError(f'The implicit "{arg.name}" argument is unknown.')
                 continue
             if arg.required:
@@ -89,6 +91,8 @@ class Command:
                 value = data
             elif arg.name == "sender":
                 value = user
+            elif arg.name == "timestamp":
+                value = datetime.utcfromtimestamp(int(data["attrs"]["timeStamp"]) / 1000)
             args[arg.name] = value
 
         message = data["attrs"]["text"].split()[1:]
