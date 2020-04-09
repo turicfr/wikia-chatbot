@@ -1,4 +1,4 @@
-from enum import IntEnum
+from enum import IntEnum, unique
 
 class User:
     def __init__(self, name, rank, seen, connected=True):
@@ -13,6 +13,7 @@ class User:
     def __str__(self):
         return self.name
 
+@unique
 class Rank(IntEnum):
     USER = 1
     MODERATOR = 2
