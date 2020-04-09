@@ -100,12 +100,12 @@ class MyPlugin:
                 log_file.write(f"{format.format(timestamp=timestamp, line=html.escape(line, quote=False))}\n")
 
     @Command(sender=Argument(implicit=True))
-    def hello(self, data, sender):
+    def hello(self, sender):
         """Reply with message."""
         self.client.send_message(f'Hello there, {sender}')
 
     @Command(sender=Argument(implicit=True), command=Argument(required=False))
-    def help(self, data, sender, command=None):
+    def help(self, sender, command=None):
         """Show this help."""
         commands = {}
         for plugin in self.client.plugins:
@@ -119,10 +119,11 @@ class MyPlugin:
             if command is None:
                 self.client.send_message(f"Command {command_name} is unavailable.")
                 return
-            self.client.send_message(f'{command.desc}\n{command} {" ".join(map(str, command.args))}')
+            explicit_args = filter(lambda arg: not arg.implicit, command.args)
+            self.client.send_message(f'{command.desc}\n{command} {" ".join(map(str, explicit_args))}')
 
     @Command(user=Argument(type=User))
-    def seen(self, data, user):
+    def seen(self, user):
         """Get the time a user was last seen in chat."""
         if user.seen is None:
             self.client.send_message(f"I haven't seen {user} since I have been here.")
@@ -132,7 +133,7 @@ class MyPlugin:
             self.client.send_message(f"I last saw {user} {format_seconds((datetime.utcnow() - user.seen).total_seconds())} ago.")
 
     @Command(sender=Argument(implicit=True), target=Argument(type=User), message=Argument(rest=True))
-    def tell(self, data, sender, target, message):
+    def tell(self, sender, target, message):
         """Deliver an offline user a message when he joins the chat."""
         if sender == target:
             self.client.send_message(f"{sender}, you can't leave a message to yourself.")
@@ -162,12 +163,12 @@ class MyPlugin:
         self.client.send_message(f"I'll tell {target} that the next time I see them.")
 
     @Command() # min_rank=Rank.MODERATOR
-    def updatelogs(self, data):
+    def updatelogs(self):
         """Log the chat now."""
         self.log_chat()
 
     @Command(min_rank=Rank.MODERATOR, target=Argument(type=User))
-    def kick(self, data, target):
+    def kick(self, target):
         """Kick a user."""
         self.client.kick(target.name)
 
@@ -176,12 +177,12 @@ class MyPlugin:
         hours=Argument(type=int),
         reason=Argument(rest=True),
     )
-    def ban(self, data, user, hours, reason):
+    def ban(self, user, hours, reason):
         """Ban a user."""
         self.client.ban(user.name, hours, reason)
 
     @Command(min_rank=Rank.MODERATOR)
-    def exit(self, data):
+    def exit(self):
         """Stop this bot."""
         self.client.logout()
         sys.exit()

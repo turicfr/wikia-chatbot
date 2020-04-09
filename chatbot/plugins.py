@@ -42,7 +42,7 @@ class Command:
         for arg_name, arg in kwargs.items():
             arg.name = arg_name
             if arg.implicit:
-                if arg.name not in ["sender"]:
+                if arg.name not in ["data", "sender"]:
                     raise ArgumentError(f'The implicit "{arg.name}" argument is unknown.')
                 continue
             if arg.required:
@@ -85,7 +85,9 @@ class Command:
         args = {}
         implicit_args = filter(lambda arg: arg.implicit, self.args)
         for arg in implicit_args:
-            if arg.name == "sender":
+            if arg.name == "data":
+                value = data
+            elif arg.name == "sender":
                 value = user
             args[arg.name] = value
 
@@ -111,4 +113,4 @@ class Command:
                     raise ArgumentError(f"Invalid argument: {arg.name}.")
             args[arg.name] = value
 
-        self.handler(plugin, data, **args)
+        self.handler(plugin, **args)
