@@ -16,9 +16,10 @@ def Plugin():
     return inner
 
 class Argument:
-    def __init__(self, required=True, rest=False, type=str):
-        if not required and rest:
-            raise ArgumentError("required must not be used in conjunction with rest.")
+    def __init__(self, implicit=False, required=True, rest=False, type=str):
+        if sum([implicit, not required, rest]) > 1:
+            raise ArgumentError("implicit, required and rest are mutual exclusive.")
+        self.implicit = implicit
         self.required = required and not rest
         self.rest = rest
         self.type = type
@@ -40,6 +41,10 @@ class Command:
         state = 0
         for arg_name, arg in kwargs.items():
             arg.name = arg_name
+            if arg.implicit:
+                if arg.name not in ["sender"]:
+                    raise ArgumentError(f'The implicit "{arg.name}" argument is unknown.')
+                continue
             if arg.required:
                 if state > 0:
                     raise ArgumentError(f'The required "{arg.name}" argument is after an optional/rest argument.')
@@ -76,16 +81,23 @@ class Command:
         user = users.get(data["attrs"]["name"].lower())
         if user is None or user.rank < self.min_rank:
             raise RankError()
+
         args = {}
+        implicit_args = filter(lambda arg: arg.implicit, self.args)
+        for arg in implicit_args:
+            if arg.name == "sender":
+                value = user
+            args[arg.name] = value
+
         message = data["attrs"]["text"].split()[1:]
-        if len(message) > len(self.args) and not (self.args and self.args[-1].rest):
+        explicit_args = list(filter(lambda arg: not arg.implicit, self.args))
+        if len(message) > len(explicit_args) and not (explicit_args and explicit_args[-1].rest):
             raise ArgumentError(f"Too many arguments.")
-        for i, arg in enumerate(self.args):
+        for i, arg in enumerate(explicit_args):
             if len(message) <= i:
                 if arg.required or arg.rest:
                     raise ArgumentError(f"Missing required argument: {arg.name}.")
-                else:
-                    break
+                break
             value = " ".join(message[i:]) if arg.rest else message[i]
             if arg.type is User:
                 name = value
@@ -98,4 +110,5 @@ class Command:
                 except:
                     raise ArgumentError(f"Invalid argument: {arg.name}.")
             args[arg.name] = value
+
         self.handler(plugin, data, **args)

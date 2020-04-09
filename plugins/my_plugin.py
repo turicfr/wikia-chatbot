@@ -99,23 +99,20 @@ class MyPlugin:
                 print(format.format(timestamp=timestamp, line=html.unescape(line)))
                 log_file.write(f"{format.format(timestamp=timestamp, line=html.escape(line, quote=False))}\n")
 
-    @Command()
-    def hello(self, data):
+    @Command(sender=Argument(implicit=True))
+    def hello(self, data, sender):
         """Reply with message."""
-        username = data["attrs"]["name"]
-        user = self.client.users[username.lower()]
-        self.client.send_message(f'Hello there, {user.name}')
+        self.client.send_message(f'Hello there, {sender}')
 
-    @Command(command=Argument(required=False))
-    def help(self, data, command=None):
+    @Command(sender=Argument(implicit=True), command=Argument(required=False))
+    def help(self, data, sender, command=None):
         """Show this help."""
         commands = {}
         for plugin in self.client.plugins:
             commands.update(plugin.commands)
-        username = data["attrs"]["name"]
         if command is None:
             commands_desc = "\n".join(f"{command}: {command.desc}" for command in commands.values())
-            self.client.send_message(f'{username}, all defined commands are:\n{commands_desc}')
+            self.client.send_message(f'{sender}, all defined commands are:\n{commands_desc}')
         else:
             command_name = command
             command = commands.get(command_name)
@@ -128,18 +125,17 @@ class MyPlugin:
     def seen(self, data, user):
         """Get the time a user was last seen in chat."""
         if user.seen is None:
-            self.client.send_message(f"I haven't seen {user.name} since I have been here.")
+            self.client.send_message(f"I haven't seen {user} since I have been here.")
         elif user.connected:
-            self.client.send_message(f"{user.name} is connected to the chat.")
+            self.client.send_message(f"{user} is connected to the chat.")
         else:
-            self.client.send_message(f"I last saw {user.name} {format_seconds((datetime.utcnow() - user.seen).total_seconds())} ago.")
+            self.client.send_message(f"I last saw {user} {format_seconds((datetime.utcnow() - user.seen).total_seconds())} ago.")
 
-    @Command(target=Argument(type=User), message=Argument(rest=True))
-    def tell(self, data, target, message):
+    @Command(sender=Argument(implicit=True), target=Argument(type=User), message=Argument(rest=True))
+    def tell(self, data, sender, target, message):
         """Deliver an offline user a message when he joins the chat."""
-        from_user = data["attrs"]["name"]
-        if from_user == target.name:
-            self.client.send_message(f"{from_user}, you can't leave a message to yourself.")
+        if sender == target:
+            self.client.send_message(f"{sender}, you can't leave a message to yourself.")
             return
 
         if target.connected:
@@ -157,7 +153,7 @@ class MyPlugin:
             tell[target.name.lower()] = []
 
         tell[target.name.lower()].append({
-            "from": from_user,
+            "from": sender.name,
             "message": message,
             "time": int(datetime.timestamp(datetime.utcnow())),
         })

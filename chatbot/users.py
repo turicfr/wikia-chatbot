@@ -7,6 +7,9 @@ class User:
         self.seen = seen
         self.connected = connected
 
+    def __eq__(self, user):
+        return self.name == user.name
+
     def __str__(self):
         return self.name
 
