@@ -59,15 +59,19 @@ class ArgumentError(Exception):
     pass
 
 class Command:
+    IMPLICIT_ARGUMENTS = ["data", "sender", "timestamp"]
+
     def __init__(self, min_rank=Rank.USER, **kwargs):
         self.min_rank = min_rank
         state = 0
         for arg_name, arg in kwargs.items():
             arg.name = arg_name
             if arg.implicit:
-                if arg.name not in ["data", "sender", "timestamp"]:
+                if arg.name not in self.IMPLICIT_ARGUMENTS:
                     raise ArgumentError(f'The implicit "{arg.name}" argument is unknown.')
                 continue
+            if arg.name in self.IMPLICIT_ARGUMENTS:
+                raise ArgumentError(f'The explicit "{arg.name}" argument is reserved as implicit.')
             if arg.required:
                 if state > 0:
                     raise ArgumentError(f'The required "{arg.name}" argument is after an optional/rest argument.')
@@ -101,41 +105,41 @@ class Command:
         return self
 
     def invoke(self, plugin, users, data):
+        def implicit_value(arg):
+            if arg.name == "data":
+                return data
+            if arg.name == "sender":
+                return user
+            if arg.name == "timestamp":
+                return datetime.utcfromtimestamp(int(data["attrs"]["timeStamp"]) / 1000)
+
+        def explicit_value(arg, i):
+            value = " ".join(message[i:]) if arg.rest else message[i]
+            if arg.type is User:
+                user = users.get(value.lower())
+                if user is None:
+                    return User(value, None, None, False)
+                return user
+            try:
+                return arg.type(value)
+            except:
+                raise ArgumentError(f"Invalid argument: {arg.name}.")
+
         user = users.get(data["attrs"]["name"].lower())
         if user is None or user.rank < self.min_rank:
             raise RankError()
-
-        args = {}
-        implicit_args = filter(lambda arg: arg.implicit, self.args)
-        for arg in implicit_args:
-            if arg.name == "data":
-                value = data
-            elif arg.name == "sender":
-                value = user
-            elif arg.name == "timestamp":
-                value = datetime.utcfromtimestamp(int(data["attrs"]["timeStamp"]) / 1000)
-            args[arg.name] = value
 
         message = data["attrs"]["text"].split()[1:]
         explicit_args = list(filter(lambda arg: not arg.implicit, self.args))
         if len(message) > len(explicit_args) and not (explicit_args and explicit_args[-1].rest):
             raise ArgumentError(f"Too many arguments.")
+
+        args = {arg.name: implicit_value(arg) for arg in self.args if arg.implicit}
         for i, arg in enumerate(explicit_args):
             if len(message) <= i:
                 if arg.required or arg.rest:
                     raise ArgumentError(f"Missing required argument: {arg.name}.")
                 break
-            value = " ".join(message[i:]) if arg.rest else message[i]
-            if arg.type is User:
-                name = value
-                value = users.get(name.lower())
-                if value is None:
-                    value = User(name, None, None, False)
-            else:
-                try:
-                    value = arg.type(value)
-                except:
-                    raise ArgumentError(f"Invalid argument: {arg.name}.")
-            args[arg.name] = value
+            args[arg.name] = explicit_value(arg, i)
 
         self.handler(plugin, **args)
