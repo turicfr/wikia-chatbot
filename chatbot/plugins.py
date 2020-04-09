@@ -10,9 +10,30 @@ def Plugin():
     def inner(cls):
         nonlocal called
         if called:
-            raise Exception("Plugin used more than once.")
+            raise Exception("Plugin is used more than once.")
         called = True
-        class Wrapper(cls):
+        class DefaultEvents:
+            def on_load(self, client):
+                pass
+            def on_connect(self):
+                pass
+            def on_connect_error(self):
+                pass
+            def on_disconnect(self):
+                pass
+            def on_join(self, data):
+                pass
+            def on_initial(self, data):
+                pass
+            def on_logout(self, data):
+                pass
+            def on_kick(self, data):
+                pass
+            def on_ban(self, data):
+                pass
+            def on_message(self, data):
+                pass
+        class Wrapper(cls, DefaultEvents):
             commands = stack.pop()
         return Wrapper
     return inner

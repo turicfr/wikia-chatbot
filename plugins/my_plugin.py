@@ -103,11 +103,6 @@ class MyPlugin:
                     pass
                 log_file.write(f"{format.format(timestamp=timestamp, line=html.escape(line, quote=False))}\n")
 
-    @Command(sender=Argument(implicit=True))
-    def hello(self, sender):
-        """Reply with message."""
-        self.client.send_message(f'Hello there, {sender}')
-
     @Command(sender=Argument(implicit=True), command=Argument(required=False))
     def help(self, sender, command=None):
         """Show this help."""

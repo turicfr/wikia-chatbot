@@ -3,6 +3,7 @@ import json
 
 from chatbot import ChatBot, ClientError
 from plugins.my_plugin import MyPlugin
+from plugins.hello import HelloPlugin
 
 def main():
     try:
@@ -16,6 +17,7 @@ def main():
     site = f'https://{config["wiki"]}.fandom.com/'
     bot = ChatBot(username, password, site)
     bot.add_plugin(MyPlugin())
+    bot.add_plugin(HelloPlugin())
     try:
         bot.start()
     except ClientError as e:
