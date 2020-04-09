@@ -54,7 +54,7 @@ class LogPlugin:
             for line in lines:
                 try:
                     print(format.format(timestamp=timestamp, line=html.unescape(line)))
-                except OSError: # TODO: inversigate this error
+                except OSError: # TODO: investigate this error
                     pass
                 log_file.write(f"{format.format(timestamp=timestamp, line=html.escape(line, quote=False))}\n")
 

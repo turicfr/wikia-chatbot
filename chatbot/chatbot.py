@@ -3,7 +3,7 @@ from urllib.parse import urlencode, urlparse, urlunparse
 from datetime import datetime
 
 from .users import User, Rank, RankError
-from .plugins import Plugin, Command, Argument, ArgumentError
+from .plugins import ArgumentError
 
 import requests
 import socketio
@@ -172,12 +172,12 @@ class ChatBot:
             plugin.on_connect()
 
     def on_connect_error(self):
-        print("Connect error")
+        print("Connection error.")
         for plugin in self.plugins:
             plugin.on_connect_error()
 
     def on_disconnect(self):
-        print("Logged off")
+        print("Logged out.")
         for plugin in self.plugins:
             plugin.on_disconnect()
 

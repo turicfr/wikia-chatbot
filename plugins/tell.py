@@ -46,7 +46,6 @@ class TellPlugin:
             return
 
         try:
-            # TODO: relative (no __file__?)
             with open("tell.json", encoding="utf-8") as tell_file:
                 tell = json.load(tell_file)
         except (FileNotFoundError, json.decoder.JSONDecodeError):

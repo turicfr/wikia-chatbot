@@ -12,7 +12,7 @@ def Plugin():
         if called:
             raise Exception("Plugin is used more than once.")
         called = True
-        class DefaultEvents:
+        class Default:
             def on_load(self, client):
                 pass
             def on_connect(self):
@@ -33,7 +33,7 @@ def Plugin():
                 pass
             def on_message(self, data):
                 pass
-        class Wrapper(cls, DefaultEvents):
+        class Wrapper(cls, Default):
             commands = stack.pop()
         return Wrapper
     return inner
