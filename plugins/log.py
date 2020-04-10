@@ -2,13 +2,14 @@ import html
 from datetime import datetime
 from threading import Timer
 
-from chatbot.plugins import Plugin, Command
+from chatbot.plugins import Plugin, Command, Argument
 
 @Plugin()
 class LogPlugin:
     def __init__(self):
         self.client = None
         self.timer = None
+        self.last_edit = None
 
     def on_load(self, client):
         self.client = client
@@ -41,18 +42,20 @@ class LogPlugin:
         self.log(message.splitlines(), f"{{timestamp}} <{username}> {{line}}", timestamp)
 
     def log_chat(self):
-        title = f"Project:Chat/Logs/{datetime.utcnow():%d %B %Y}"
         with open("chat.log", encoding="utf-8") as log_file:
             log_data = log_file.read()
         with open("chat.log", "w", encoding="utf-8") as log_file:
             pass
+        now = datetime.utcnow()
+        title = f"Project:Chat/Logs/{now:%d %B %Y}"
         page_text = self.client.view(title)
         if page_text:
             end = page_text.rindex("</pre>")
             page_text = f"{page_text[:end]}{log_data}{page_text[end:]}"
         else:
-            page_text = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs/{datetime.utcnow():%Y %d %B}]]'
+            page_text = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs/{now:%Y %d %B}]]'
         self.client.edit(title, page_text, summary="Updating chat logs")
+        self.last_edit = now
 
     @staticmethod
     def log(lines, format, timestamp):
@@ -69,3 +72,16 @@ class LogPlugin:
     def updatelogs(self):
         """Log the chat now."""
         self.log_chat()
+
+    @Command(sender=Argument(implicit=True))
+    def status(self, sender):
+        """Report the last time the logs were uploaded and how many lines are currently in the log buffer."""
+        with open("chat.log", encoding="utf-8") as log_file:
+            lines = len(log_file.readlines())
+        message = f"{sender}: "
+        if self.last_edit is None:
+            message += "I haven't updated the logs since I joined here."
+        else:
+            message += f"I last updated the logs {(datetime.utcnow() - self.last_edit).minute} minutes ago."
+        message += f" There are currently ~{lines} lines in the log buffer."
+        self.client.send_message(message)
