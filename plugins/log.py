@@ -22,7 +22,7 @@ class LogPlugin:
             self.timer.cancel()
 
     def hourly(self):
-        self.log_chat(self.client)
+        self.log_chat()
         self.timer = Timer(3600 - datetime.utcnow().minute * 60 - datetime.utcnow().second, self.hourly)
         self.timer.start()
 
