@@ -9,6 +9,7 @@ from plugins.log import LogPlugin
 from plugins.seen import SeenPlugin
 from plugins.tell import TellPlugin
 from plugins.hello import HelloPlugin
+from plugins.xo import XOPlugin
 
 def main():
     try:
@@ -27,6 +28,7 @@ def main():
     bot.add_plugin(SeenPlugin())
     bot.add_plugin(TellPlugin())
     bot.add_plugin(HelloPlugin())
+    bot.add_plugin(XOPlugin())
     try:
         bot.start()
     except ClientError as e:
