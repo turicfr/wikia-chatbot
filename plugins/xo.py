@@ -13,6 +13,7 @@ class XOPlugin:
 
     @Command(sender=Argument(implicit=True), position=Argument(required=False, type=int))
     def xo(self, sender, position=None):
+        """Play a Tic Tac Toe match against me."""
         if position is None:
             self.board = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
         elif self.board is None:
