@@ -10,6 +10,7 @@ from plugins.seen import SeenPlugin
 from plugins.tell import TellPlugin
 from plugins.hello import HelloPlugin
 from plugins.xo import XOPlugin
+from plugins.youtube import YouTubePlugin
 
 def main():
     try:
@@ -29,6 +30,7 @@ def main():
     bot.add_plugin(TellPlugin())
     bot.add_plugin(HelloPlugin())
     bot.add_plugin(XOPlugin())
+    bot.add_plugin(YouTubePlugin(config["youtube"]))
     try:
         bot.start()
     except ClientError as e:
