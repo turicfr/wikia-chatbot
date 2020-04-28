@@ -80,7 +80,8 @@ class LogPlugin:
     @Command(sender=Argument(implicit=True))
     def status(self, sender):
         """Report the last time the logs were uploaded and how many lines are currently in the log buffer."""
-        with open("chat.log", encoding="utf-8") as log_file:
+        filename = f"logs/chat-{datetime.utcnow():%Y-%m-%d}.log"
+        with open(filename, encoding="utf-8") as log_file:
             lines = len(log_file.readlines())
         message = f"{sender}: "
         if self.last_edit is None:

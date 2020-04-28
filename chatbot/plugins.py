@@ -8,6 +8,7 @@ stack = []
 def Plugin():
     stack.append({})
     called = False
+
     def inner(cls):
         nonlocal called
         if called:

@@ -30,7 +30,7 @@ def main():
     bot.add_plugin(TellPlugin())
     bot.add_plugin(HelloPlugin())
     bot.add_plugin(XOPlugin())
-    if config["youtube"]:
+    if config.get("youtube"):
         bot.add_plugin(YouTubePlugin(config["youtube"]))
     try:
         bot.start()

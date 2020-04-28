@@ -78,21 +78,21 @@ class ChatBot:
             "intoken": "edit|delete|protect|move|block|unblock|email|import",
             "format": "json",
         }).json()
-        thes = tuple(content["query"]["pages"].values())[0]
+        tokens = tuple(content["query"]["pages"].values())[0]
         try:
             warnings = content["warnings"]["info"]["*"]
-        except:
+        except KeyError:
             warnings = None
         if warnings is None:
             warnings = {}
-        self.edit_token = thes["edittoken"] if "edit" not in warnings else None
-        self.delete_token = thes["deletetoken"] if "delete" not in warnings else None
-        self.protect_token = thes["protecttoken"] if "protect" not in warnings else None
-        self.move_token = thes["movetoken"] if "move" not in warnings else None
-        self.block_token = thes["blocktoken"] if "block" not in warnings else None
-        self.unblock_token = thes["unblocktoken"] if "unblock" not in warnings else None
-        self.email_token = thes["emailtoken"] if "email" not in warnings else None
-        self.import_token = thes["importtoken"] if "import" not in warnings else None
+        self.edit_token = tokens["edittoken"] if "edit" not in warnings else None
+        self.delete_token = tokens["deletetoken"] if "delete" not in warnings else None
+        self.protect_token = tokens["protecttoken"] if "protect" not in warnings else None
+        self.move_token = tokens["movetoken"] if "move" not in warnings else None
+        self.block_token = tokens["blocktoken"] if "block" not in warnings else None
+        self.unblock_token = tokens["unblocktoken"] if "unblock" not in warnings else None
+        self.email_token = tokens["emailtoken"] if "email" not in warnings else None
+        self.import_token = tokens["importtoken"] if "import" not in warnings else None
 
     def view(self, title, section=None):
         data = {
