@@ -66,7 +66,7 @@ class LogPlugin:
                     print(format.format(timestamp=timestamp, line=html.unescape(line)))
                 except OSError: # TODO: investigate this error
                     pass
-                log_file.write(f"{format.format(timestamp=timestamp, line=html.escape(line, quote=False))}\n")
+                log_file.write(f"{html.escape(format.format(timestamp=timestamp, line=line), quote=False)}\n")
 
     @Command() # min_rank=Rank.MODERATOR
     def updatelogs(self):
