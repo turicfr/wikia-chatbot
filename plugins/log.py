@@ -1,8 +1,9 @@
+import os
 import html
 from datetime import datetime
 from threading import Timer
 
-from chatbot.plugins import Plugin, Command, Argument
+from chatbot.plugins import Plugin, Command, Argument, Rank
 
 @Plugin()
 class LogPlugin:
@@ -42,11 +43,12 @@ class LogPlugin:
         self.log(message.splitlines(), f"{{timestamp}} <{username}> {{line}}", timestamp)
 
     def log_chat(self):
-        with open("chat.log", encoding="utf-8") as log_file:
-            log_data = log_file.read()
-        with open("chat.log", "w", encoding="utf-8") as log_file:
-            pass
         now = datetime.utcnow()
+        filename = f"logs/chat-{now:%Y-%m-%d}.log"
+        with open(filename, encoding="utf-8") as log_file:
+            log_data = log_file.read()
+        with open(filename, "w", encoding="utf-8") as log_file:
+            pass
         title = f"Project:Chat/Logs/{now:%d %B %Y}"
         page_text = self.client.view(title)
         if page_text:
@@ -60,7 +62,9 @@ class LogPlugin:
     @staticmethod
     def log(lines, format, timestamp):
         timestamp = f"[{timestamp:%Y-%m-%d %H:%M:%S}]"
-        with open("chat.log", "a", encoding="utf-8") as log_file:
+        filename = f"logs/chat-{datetime.utcnow():%Y-%m-%d}.log"
+        os.makedirs("logs", exist_ok=True)
+        with open(filename, "a", encoding="utf-8") as log_file:
             for line in lines:
                 try:
                     print(format.format(timestamp=timestamp, line=html.unescape(line)))
@@ -68,7 +72,7 @@ class LogPlugin:
                     pass
                 log_file.write(f"{html.escape(format.format(timestamp=timestamp, line=line), quote=False)}\n")
 
-    @Command() # min_rank=Rank.MODERATOR
+    @Command(min_rank=Rank.MODERATOR)
     def updatelogs(self):
         """Log the chat now."""
         self.log_chat()
