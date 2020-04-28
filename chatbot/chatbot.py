@@ -1,6 +1,7 @@
 import json
 from urllib.parse import urlencode, urlparse, urlunparse
 from datetime import datetime
+from threading import Timer
 
 from .users import User, Rank, RankError
 from .plugins import ArgumentError
@@ -137,6 +138,9 @@ class ChatBot:
             "attrs": attrs,
         }))
 
+    def ping(self):
+        self.sio._send_packet(socketio.packet.Packet())
+
     def send_message(self, text):
         self.send({
             "msgType": "chat",
@@ -171,6 +175,8 @@ class ChatBot:
 
     def on_connect(self):
         print(f"Logged in as {self.username}.")
+        self.ping_timer = Timer(15, self.ping)
+        self.ping_timer.start()
         for plugin in self.plugins:
             plugin.on_connect()
 
@@ -181,6 +187,7 @@ class ChatBot:
 
     def on_disconnect(self):
         print("Logged out.")
+        self.ping_timer.cancel()
         for plugin in self.plugins:
             plugin.on_disconnect()
 
