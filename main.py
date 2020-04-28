@@ -30,7 +30,8 @@ def main():
     bot.add_plugin(TellPlugin())
     bot.add_plugin(HelloPlugin())
     bot.add_plugin(XOPlugin())
-    bot.add_plugin(YouTubePlugin(config["youtube"]))
+    if config["youtube"]:
+        bot.add_plugin(YouTubePlugin(config["youtube"]))
     try:
         bot.start()
     except ClientError as e:

@@ -1,8 +1,9 @@
 import re
 import requests
+import isodate
 from datetime import datetime
 
-from chatbot.plugins import Plugin, Command, Argument
+from chatbot.plugins import Plugin
 
 @Plugin()
 class YouTubePlugin:
@@ -15,13 +16,17 @@ class YouTubePlugin:
         self.client = client
 
     def on_message(self, data):
-        username = data["attrs"]["name"]
         message = data["attrs"]["text"]
         for video_id in self.url_regex.findall(message):
-            snippet = requests.get("https://www.googleapis.com/youtube/v3/videos", params={
+            item = requests.get("https://www.googleapis.com/youtube/v3/videos", params={
                 "id": video_id,
                 "key": self.key,
-                "part": "snippet, statistics",
-            }).json()["items"][0]["snippet"]
-            published_at = datetime.strptime(snippet["publishedAt"], "%Y-%m-%dT%H:%M:%S.%fZ")
-            self.client.send_message(f'YouTube: {snippet["title"]} · by {snippet["channelTitle"]} · {published_at:%d %B, %Y}')
+                "part": "snippet, statistics, contentDetails",
+            }).json()["items"][0]
+            duration = isodate.parse_duration(item["contentDetails"]["duration"])
+            published_at = datetime.strptime(item["snippet"]["publishedAt"], "%Y-%m-%dT%H:%M:%S.%fZ")
+            self.client.send_message(
+                f'YouTube: {item["snippet"]["title"]} · {duration} '
+                f'· by {item["snippet"]["channelTitle"]} on {published_at:%d %B, %Y} '
+                f'· {int(item["statistics"]["viewCount"]):,} views'
+            )
