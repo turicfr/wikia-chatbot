@@ -44,10 +44,13 @@ class LogPlugin:
 
     def log_chat(self):
         now = datetime.utcnow()
-        filename = f"logs/chat-{now:%Y-%m-%d}.log"
-        with open(filename, encoding="utf-8") as log_file:
+        os.makedirs("logs", exist_ok=True)
+        filepath = f"logs/chat-{now:%Y-%m-%d}.log"
+        if not os.path.exists(filepath):
+            return
+        with open(filepath, encoding="utf-8") as log_file:
             log_data = log_file.read()
-        with open(filename, "w", encoding="utf-8") as log_file:
+        with open(filepath, "w", encoding="utf-8") as log_file:
             pass
         title = f"Project:Chat/Logs/{now:%d %B %Y}"
         page_text = self.client.view(title)
@@ -62,9 +65,9 @@ class LogPlugin:
     @staticmethod
     def log(lines, format, timestamp):
         timestamp = f"[{timestamp:%Y-%m-%d %H:%M:%S}]"
-        filename = f"logs/chat-{datetime.utcnow():%Y-%m-%d}.log"
         os.makedirs("logs", exist_ok=True)
-        with open(filename, "a", encoding="utf-8") as log_file:
+        filepath = f"logs/chat-{datetime.utcnow():%Y-%m-%d}.log"
+        with open(filepath, "a", encoding="utf-8") as log_file:
             for line in lines:
                 try:
                     print(format.format(timestamp=timestamp, line=html.unescape(line)))
@@ -87,6 +90,6 @@ class LogPlugin:
         if self.last_edit is None:
             message += "I haven't updated the logs since I joined here."
         else:
-            message += f"I last updated the logs {(datetime.utcnow() - self.last_edit).minute} minutes ago."
+            message += f"I last updated the logs {(datetime.utcnow() - self.last_edit).total_seconds() / 60:.2f} minutes ago."
         message += f" There are currently ~{lines} lines in the log buffer."
         self.client.send_message(message)
