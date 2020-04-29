@@ -47,7 +47,6 @@ class ChatBot:
         result = response["login"]["result"]
         if result != "Success":
             raise ClientError(f"Log in failed: {result}")
-        self.edit_tokens()
         self.connect()
 
     def connect(self):
@@ -70,65 +69,37 @@ class ChatBot:
         })
         self.sio.connect(urlunparse(url))
 
-    def edit_tokens(self):
-        content = self.session.post(self.site + "api.php", params={
+    def view(self, title):
+        query = self.session.post(self.site + "api.php", data={
             "action": "query",
-            "prop": "info",
-            "titles": "Main Page",
-            "intoken": "edit|delete|protect|move|block|unblock|email|import",
-            "format": "json",
-        }).json()
-        tokens = tuple(content["query"]["pages"].values())[0]
-        try:
-            warnings = content["warnings"]["info"]["*"]
-        except KeyError:
-            warnings = None
-        if warnings is None:
-            warnings = {}
-        self.edit_token = tokens["edittoken"] if "edit" not in warnings else None
-        self.delete_token = tokens["deletetoken"] if "delete" not in warnings else None
-        self.protect_token = tokens["protecttoken"] if "protect" not in warnings else None
-        self.move_token = tokens["movetoken"] if "move" not in warnings else None
-        self.block_token = tokens["blocktoken"] if "block" not in warnings else None
-        self.unblock_token = tokens["unblocktoken"] if "unblock" not in warnings else None
-        self.email_token = tokens["emailtoken"] if "email" not in warnings else None
-        self.import_token = tokens["importtoken"] if "import" not in warnings else None
-
-    def view(self, title, section=None):
-        data = {
-            "action": "query",
-            "prop": "revisions",
+            "prop": "info|revisions",
             "titles": title,
-            "rvprop": "timestamp|content",
+            "indexpageids": True,
+            "rvprop": "content",
+            "intoken": "edit",
             "format": "json",
-        }
-        if section is not None:
-            data["rvsection"] = section
-        content = self.session.post(self.site + "api.php", data=data).json()
-        thes = tuple(content["query"]["pages"].values())[0]
-        try:
-            return thes["revisions"][0]["*"]
-        except KeyError:
-            return None
+        }).json()["query"]
+        page_id = query["pageids"][0]
+        page = query["pages"][page_id]
+        page_content = ""
+        if page_id != "-1":
+            page_content = page["revisions"][0]["*"]
+        return page_content, page["edittoken"]
 
-    def edit(self, title, page_text, summary="", minor=False, bot=True, section=False):
+    def edit(self, title, page_text, token, summary=""):
         data = {
             "action": "edit",
+            "bot": True,
+            "minor": True,
             "title": title,
             "summary": summary,
-            "token": self.edit_token,
+            "token": token,
             "format": "json",
         }
         try:
             data["text"] = page_text.encode("utf-8")
         except:
             data["text"] = page_text
-        if bot:
-            data["bot"] = True
-        if minor:
-            data["minor"] = True
-        if section:
-            data["section"] = True
         if page_text:
             return self.session.post(self.site + "api.php", data=data).json()
 

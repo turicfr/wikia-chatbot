@@ -53,13 +53,13 @@ class LogPlugin:
         with open(filepath, "w", encoding="utf-8") as log_file:
             pass
         title = f"Project:Chat/Logs/{now:%d %B %Y}"
-        page_text = self.client.view(title)
+        page_text, token = self.client.view(title)
         if page_text:
             end = page_text.rindex("</pre>")
             page_text = f"{page_text[:end]}{log_data}{page_text[end:]}"
         else:
             page_text = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs/{now:%Y %d %B}]]'
-        self.client.edit(title, page_text, summary="Updating chat logs")
+        self.client.edit(title, page_text, token, summary="Updating chat logs")
         self.last_edit = now
 
     @staticmethod
