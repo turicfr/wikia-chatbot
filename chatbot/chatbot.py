@@ -3,6 +3,7 @@ from urllib.parse import urlencode, urlparse, urlunparse
 from datetime import datetime
 from threading import Timer
 
+from .page import Page
 from .users import User, Rank, RankError
 from .plugins import ArgumentError
 
@@ -69,39 +70,8 @@ class ChatBot:
         })
         self.sio.connect(urlunparse(url))
 
-    def view(self, title):
-        query = self.session.post(self.site + "api.php", data={
-            "action": "query",
-            "prop": "info|revisions",
-            "titles": title,
-            "indexpageids": True,
-            "rvprop": "content",
-            "intoken": "edit",
-            "format": "json",
-        }).json()["query"]
-        page_id = query["pageids"][0]
-        page = query["pages"][page_id]
-        page_content = ""
-        if page_id != "-1":
-            page_content = page["revisions"][0]["*"]
-        return page_content, page["edittoken"]
-
-    def edit(self, title, page_text, token, summary=""):
-        data = {
-            "action": "edit",
-            "bot": True,
-            "minor": True,
-            "title": title,
-            "summary": summary,
-            "token": token,
-            "format": "json",
-        }
-        try:
-            data["text"] = page_text.encode("utf-8")
-        except:
-            data["text"] = page_text
-        if page_text:
-            return self.session.post(self.site + "api.php", data=data).json()
+    def open_page(self, title):
+        return Page(self, title)
 
     def send(self, attrs):
         self.sio.send(json.dumps({

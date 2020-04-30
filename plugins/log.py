@@ -44,33 +44,32 @@ class LogPlugin:
 
     def log_chat(self):
         now = datetime.utcnow()
-        os.makedirs("logs", exist_ok=True)
-        filepath = f"logs/chat-{now:%Y-%m-%d}.log"
-        if not os.path.exists(filepath):
+        filepath = os.path.join(os.path.dirname(__file__), "logs", f"chat-{now:%Y-%m-%d}.log")
+        try:
+            with open(filepath, encoding="utf-8") as log_file:
+                log_data = log_file.read()
+        except FileNotFoundError:
             return
-        with open(filepath, encoding="utf-8") as log_file:
-            log_data = log_file.read()
-        with open(filepath, "w", encoding="utf-8") as log_file:
-            pass
         title = f"Project:Chat/Logs/{now:%d %B %Y}"
-        page_text, token = self.client.view(title)
-        if page_text:
-            end = page_text.rindex("</pre>")
-            page_text = f"{page_text[:end]}{log_data}{page_text[end:]}"
+        page = self.client.open_page(title)
+        if page.content:
+            end = page.content.rindex("</pre>")
+            page.content = page.content[:end] + log_data + page.content[end:]
         else:
-            page_text = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs/{now:%Y %d %B}]]'
-        self.client.edit(title, page_text, token, summary="Updating chat logs")
+            page.content = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs|{now:%Y %d %B}]]'
+        page.save("Updating chat logs")
+        os.remove(filepath)
         self.last_edit = now
 
     @staticmethod
     def log(lines, format, timestamp):
         timestamp = f"[{timestamp:%Y-%m-%d %H:%M:%S}]"
-        os.makedirs("logs", exist_ok=True)
-        filepath = f"logs/chat-{datetime.utcnow():%Y-%m-%d}.log"
+        filepath = os.path.join(os.path.dirname(__file__), "logs", f"chat-{datetime.utcnow():%Y-%m-%d}.log")
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "a", encoding="utf-8") as log_file:
             for line in lines:
                 try:
-                    print(format.format(timestamp=timestamp, line=html.unescape(line)))
+                    print(html.unescape(format.format(timestamp=timestamp, line=line)))
                 except OSError: # TODO: investigate this error
                     pass
                 log_file.write(f"{html.escape(format.format(timestamp=timestamp, line=line), quote=False)}\n")
@@ -83,9 +82,12 @@ class LogPlugin:
     @Command(sender=Argument(implicit=True))
     def status(self, sender):
         """Report the last time the logs were uploaded and how many lines are currently in the log buffer."""
-        filename = f"logs/chat-{datetime.utcnow():%Y-%m-%d}.log"
-        with open(filename, encoding="utf-8") as log_file:
-            lines = len(log_file.readlines())
+        filepath = os.path.join(os.path.dirname(__file__), "logs", f"chat-{datetime.utcnow():%Y-%m-%d}.log")
+        try:
+            with open(filepath, encoding="utf-8") as log_file:
+                lines = len(log_file.readlines())
+        except FileNotFoundError:
+            lines = 0
         message = f"{sender}: "
         if self.last_edit is None:
             message += "I haven't updated the logs since I joined here."
