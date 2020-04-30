@@ -158,7 +158,7 @@ class Command:
                 return user
             try:
                 return arg.type(value)
-            except:
+            except ValueError:
                 raise ArgumentError(f"Invalid argument: {arg.name}.")
 
         user = users.get(data["attrs"]["name"].lower())

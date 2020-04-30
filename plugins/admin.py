@@ -14,7 +14,8 @@ class AdminPlugin:
         """Kick a user."""
         self.client.kick(target.name)
 
-    @Command(min_rank=Rank.MODERATOR,
+    @Command(
+        min_rank=Rank.MODERATOR,
         user=Argument(type=User),
         hours=Argument(type=int),
         reason=Argument(rest=True),

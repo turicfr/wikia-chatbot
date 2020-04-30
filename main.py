@@ -16,7 +16,7 @@ def main():
     try:
         with open("config.json") as file:
             config = json.load(file)
-    except:
+    except FileNotFoundError:
         print(f"Error: Cannot read config.")
         sys.exit(1)
     username = config["username"]
