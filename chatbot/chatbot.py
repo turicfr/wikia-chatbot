@@ -36,17 +36,21 @@ class ChatBot:
 
     def start(self):
         print(f"Logging in as {self.username}...")
-        data = {
+        response = self.session.post(self.site + "api.php", params={
             "action": "login",
             "lgname": self.username,
             "lgpassword": self.password,
             "format": "json",
-        }
-        response = self.session.post(self.site + "api.php", data=data).json()
-        data["lgtoken"] = response["login"]["token"]
-        response = self.session.post(self.site + "api.php", data=data).json()
-        result = response["login"]["result"]
-        if result != "Success":
+        }).json()
+        if response["login"]["result"] == "NeedToken":
+            response = self.session.post(self.site + "api.php", data={
+                "action": "login",
+                "lgname": self.username,
+                "lgpassword": self.password,
+                "lgtoken": response["login"]["token"],
+                "format": "json",
+            }).json()
+        if response["login"]["result"] != "Success":
             raise ClientError(f"Log in failed: {result}")
         self.connect()
 
