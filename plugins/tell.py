@@ -8,28 +8,36 @@ from chatbot.plugins import Plugin, Command, Argument
 class TellPlugin:
     def __init__(self):
         self.client = None
+        self.joined = []
 
     def on_load(self, client):
         self.client = client
 
     def on_join(self, data):
+        self.joined.append(data["attrs"]["name"])
+
+    def on_message(self, data):
+        username = data["attrs"]["name"]
+        if not username in self.joined:
+            return
+
         try:
             with open("tell.json", encoding="utf-8") as tell_file:
                 tell = json.load(tell_file)
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             tell = {}
 
-        username = data["attrs"]["name"]
         messages = tell.get(username.lower())
         if not messages:
             return
         for message in messages:
-            self.client.send_message(
-                f'{username}, {message["from"]} wanted to tell you @ '
-                f'{datetime.utcfromtimestamp(message["timestamp"]):%Y-%m-%d %H:%M:%S} UTC: {message["message"]}'
-            )
-            message["delivered"] = datetime.utcnow().timestamp()
-
+            if not "delivered" in message:
+                self.client.send_message(
+                    f'{username}, {message["from"]} wanted to tell you @ '
+                    f'{datetime.utcfromtimestamp(message["timestamp"]):%Y-%m-%d %H:%M:%S} UTC: {message["message"]}'
+                )
+                message["delivered"] = datetime.utcnow().timestamp()
+        self.joined.remove(username)
         with open("tell.json", "w", encoding="utf-8") as tell_file:
             json.dump(tell, tell_file)
 
@@ -110,12 +118,13 @@ class TellPlugin:
                 if not response:
                     response = [f"I've got no message from you to {target}."]
 
-                tell[target.name.lower()] = list(filter(
-                    lambda m: m["from"] != sender.name or "delivered" not in m,
-                    tell[target.name.lower()]
-                ))
-                if not tell[target.name.lower()]:
-                    del tell[target.name.lower()]
-                with open("tell.json", "w", encoding="utf-8") as tell_file:
-                    json.dump(tell, tell_file)
+                if tell.get(target.name.lower()):
+                    tell[target.name.lower()] = list(filter(
+                        lambda m: m["from"] != sender.name or "delivered" not in m,
+                        tell[target.name.lower()]
+                    ))
+                    if not tell[target.name.lower()]:
+                        del tell[target.name.lower()]
+                    with open("tell.json", "w", encoding="utf-8") as tell_file:
+                        json.dump(tell, tell_file)
         self.client.send_message("\n".join(f"{sender}, {line}" for line in response))
