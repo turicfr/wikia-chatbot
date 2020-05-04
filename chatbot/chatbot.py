@@ -30,8 +30,12 @@ class ChatBot:
         self.plugins = []
 
     def add_plugin(self, plugin):
-        self.plugins.append(plugin)
-        plugin.on_load(self)
+        try:
+            plugin.on_load(self)
+        except Exception as e:
+            print(f"Plugin {plugin} failed to load: {e}")
+        else:
+            self.plugins.append(plugin)
 
     def start(self):
         print(f"Logging in as {self.username}...")
@@ -117,17 +121,26 @@ class ChatBot:
     def on_connect(self):
         print(f"Logged in as {self.username}.")
         for plugin in self.plugins:
-            plugin.on_connect()
+            try:
+                plugin.on_connect()
+            except Exception as e:
+                print(f"Plugin {plugin} failed on connect: {e}")
 
     def on_connect_error(self):
         print("Connection error.")
         for plugin in self.plugins:
-            plugin.on_connect_error()
+            try:
+                plugin.on_connect_error()
+            except Exception as e:
+                print(f"Plugin {plugin} failed on connect error: {e}")
 
     def on_disconnect(self):
         print("Logged out.")
         for plugin in self.plugins:
-            plugin.on_disconnect()
+            try:
+                plugin.on_disconnect()
+            except Exception as e:
+                print(f"Plugin {plugin} failed on disconnect: {e}")
 
     def on_event(self, data):
         handler = {
@@ -151,7 +164,10 @@ class ChatBot:
         rank = Rank.from_attrs(data["attrs"])
         self.users[username.lower()] = User(username, rank, datetime.utcnow())
         for plugin in self.plugins:
-            plugin.on_join(data)
+            try:
+                plugin.on_join(data)
+            except Exception as e:
+                print(f"Plugin {plugin} failed on join: {e}")
 
     def on_initial(self, data):
         for user in data["collections"]["users"]["models"]:
@@ -160,7 +176,10 @@ class ChatBot:
             rank = Rank.from_attrs(attrs)
             self.users[username.lower()] = User(username, rank, datetime.utcnow())
         for plugin in self.plugins:
-            plugin.on_initial(data)
+            try:
+                plugin.on_initial(data)
+            except Exception as e:
+                print(f"Plugin {plugin} failed on initial: {e}")
 
     def on_logout(self, data):
         username = data["attrs"]["name"]
@@ -168,19 +187,31 @@ class ChatBot:
         user.connected = False
         user.seen = datetime.utcnow()
         for plugin in self.plugins:
-            plugin.on_logout(data)
+            try:
+                plugin.on_logout(data)
+            except Exception as e:
+                print(f"Plugin {plugin} failed on logout: {e}")
 
     def on_kick(self, data):
         for plugin in self.plugins:
-            plugin.on_kick(data)
+            try:
+                plugin.on_kick(data)
+            except Exception as e:
+                print(f"Plugin {plugin} failed on kick: {e}")
 
     def on_ban(self, data):
         for plugin in self.plugins:
-            plugin.on_ban(data)
+            try:
+                plugin.on_ban(data)
+            except Exception as e:
+                print(f"Plugin {plugin} failed on ban: {e}")
 
     def on_message(self, data):
         for plugin in self.plugins:
-            plugin.on_message(data)
+            try:
+                plugin.on_message(data)
+            except Exception as e:
+                print(f"Plugin {plugin} failed on message: {e}")
         username = data["attrs"]["name"]
         message = data["attrs"]["text"]
         if message.lstrip().startswith("!"):
@@ -195,4 +226,6 @@ class ChatBot:
                     self.send_message(f"{username}, you don't have permission for {command}.")
                 except ArgumentError as e:
                     self.send_message(f"{username}, {e}")
+                except Exception as e:
+                    print(f"Command {command} failed: {e}")
                 break
