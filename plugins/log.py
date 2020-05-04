@@ -44,7 +44,7 @@ class LogPlugin:
 
     def log_chat(self):
         now = datetime.utcnow()
-        filepath = os.path.join(os.path.dirname(__file__), "logs", f"chat-{now:%Y-%m-%d}.log")
+        filepath = os.path.join("logs", f"chat-{now:%Y-%m-%d}.log")
         try:
             with open(filepath, encoding="utf-8") as log_file:
                 log_data = log_file.read()
@@ -64,7 +64,7 @@ class LogPlugin:
     @staticmethod
     def log(lines, format, timestamp):
         timestamp = f"[{timestamp:%Y-%m-%d %H:%M:%S}]"
-        filepath = os.path.join(os.path.dirname(__file__), "logs", f"chat-{datetime.utcnow():%Y-%m-%d}.log")
+        filepath = os.path.join("logs", f"chat-{datetime.utcnow():%Y-%m-%d}.log")
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "a", encoding="utf-8") as log_file:
             for line in lines:
@@ -82,7 +82,7 @@ class LogPlugin:
     @Command(sender=Argument(implicit=True))
     def status(self, sender):
         """Report the last time the logs were uploaded and how many lines are currently in the log buffer."""
-        filepath = os.path.join(os.path.dirname(__file__), "logs", f"chat-{datetime.utcnow():%Y-%m-%d}.log")
+        filepath = os.path.join("logs", f"chat-{datetime.utcnow():%Y-%m-%d}.log")
         try:
             with open(filepath, encoding="utf-8") as log_file:
                 lines = len(log_file.readlines())
