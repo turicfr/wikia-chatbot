@@ -1,4 +1,5 @@
 import os
+import sys
 import html
 from datetime import datetime
 from threading import Timer
@@ -68,10 +69,7 @@ class LogPlugin:
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "a", encoding="utf-8") as log_file:
             for line in lines:
-                try:
-                    print(html.unescape(format.format(timestamp=timestamp, line=line)))
-                except OSError: # TODO: investigate this error
-                    pass
+                print(html.unescape(format.format(timestamp=timestamp, line=line)), file=sys.stderr)
                 log_file.write(f"{html.escape(format.format(timestamp=timestamp, line=line), quote=False)}\n")
 
     @Command(min_rank=Rank.MODERATOR)

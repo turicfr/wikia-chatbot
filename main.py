@@ -17,7 +17,7 @@ def main():
         with open("config.json") as file:
             config = json.load(file)
     except FileNotFoundError:
-        print(f"Error: Cannot read config.")
+        print(f"Error: Cannot read config.", file=sys.stderr)
         sys.exit(1)
     username = config["username"]
     password = config["password"]
@@ -35,7 +35,7 @@ def main():
     try:
         bot.start()
     except ClientError as e:
-        print(f"Error: {e}")
+        print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":

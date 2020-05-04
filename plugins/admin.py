@@ -27,5 +27,4 @@ class AdminPlugin:
     @Command(min_rank=Rank.MODERATOR)
     def exit(self):
         """Stop this bot."""
-        print("Logging out...")
         self.client.logout()
