@@ -1,4 +1,5 @@
 from enum import Enum, auto
+from shlex import shlex
 from datetime import datetime
 
 from .users import User, Rank, RankError
@@ -149,8 +150,7 @@ class Command:
             if arg.name == "timestamp":
                 return datetime.utcfromtimestamp(int(data["attrs"]["timeStamp"]) / 1000)
 
-        def explicit_value(arg, i):
-            value = " ".join(message[i:]) if arg.rest else message[i]
+        def explicit_value(arg, value):
             if arg.type is User:
                 user = users.get(value.lower())
                 if user is None:
@@ -165,17 +165,33 @@ class Command:
         if user is None or user.rank < self.min_rank:
             raise RankError()
 
-        message = data["attrs"]["text"].split()[1:]
+        message = data["attrs"]["text"]
+        lex = shlex(message[1:], posix=True)
+        lex.get_token() # skip command name
+
         explicit_args = list(filter(lambda arg: arg.explicit, self.args))
-        if len(message) > len(explicit_args) and not (explicit_args and explicit_args[-1].rest):
-            raise ArgumentError(f"Too many arguments.")
+        has_rest = explicit_args and explicit_args[-1].rest
+        if has_rest:
+            try:
+                tokens = [lex.get_token() for arg in explicit_args if not arg.rest]
+            except ValueError as e:
+                raise ArgumentError(str(e))
+            offset = lex.instream.tell()
+            tokens.append(message[offset + 1:])
+        else:
+            try:
+                tokens = list(lex)
+            except ValueError as e:
+                raise ArgumentError(str(e))
+            if len(tokens) > len(explicit_args):
+                raise ArgumentError("Too many arguments.")
 
         args = {arg.name: implicit_value(arg) for arg in self.args if arg.implicit}
         for i, arg in enumerate(explicit_args):
-            if len(message) <= i:
+            if len(tokens) <= i:
                 if arg.required or arg.rest:
                     raise ArgumentError(f"Missing required argument: {arg.name}.")
                 break
-            args[arg.name] = explicit_value(arg, i)
+            args[arg.name] = explicit_value(arg, tokens[i])
 
         self.handler(plugin, **args)
