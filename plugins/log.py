@@ -17,16 +17,16 @@ class LogPlugin:
         self.client = client
 
     def on_connect(self):
-        self.timer = Timer(3600 - datetime.utcnow().minute * 60 - datetime.utcnow().second, self.hourly)
+        self.timer = Timer(3600 - datetime.utcnow().minute * 60 - datetime.utcnow().second, self.hourly, args=[datetime.utcnow()])
         self.timer.start()
 
     def on_disconnect(self):
         if self.timer is not None:
             self.timer.cancel()
 
-    def hourly(self):
-        self.log_chat()
-        self.timer = Timer(3600 - datetime.utcnow().minute * 60 - datetime.utcnow().second, self.hourly)
+    def hourly(self, started):
+        self.log_chat(started)
+        self.timer = Timer(3600 - datetime.utcnow().minute * 60 - datetime.utcnow().second, self.hourly, args=[datetime.utcnow()])
         self.timer.start()
 
     def on_join(self, data):
@@ -43,24 +43,23 @@ class LogPlugin:
         timestamp = datetime.utcfromtimestamp(int(data["attrs"]["timeStamp"]) / 1000)
         self.log(message.splitlines(), f"{{timestamp}} <{username}> {{line}}", timestamp)
 
-    def log_chat(self):
-        now = datetime.utcnow()
-        filepath = os.path.join("logs", f"chat-{now:%Y-%m-%d}.log")
+    def log_chat(self, started):
+        filepath = os.path.join("logs", f"chat-{started:%Y-%m-%d}.log")
         try:
             with open(filepath, encoding="utf-8") as log_file:
                 log_data = log_file.read()
         except FileNotFoundError:
             return
-        title = f"Project:Chat/Logs/{now:%d %B %Y}"
+        title = f"Project:Chat/Logs/{started:%d %B %Y}"
         page = self.client.open_page(title)
         if page.content:
             end = page.content.rindex("</pre>")
             page.content = page.content[:end] + log_data + page.content[end:]
         else:
-            page.content = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs|{now:%Y %d %B}]]'
+            page.content = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs|{started:%Y %d %B}]]'
         page.save("Updating chat logs")
         os.remove(filepath)
-        self.last_edit = now
+        self.last_edit = datetime.utcnow()
 
     @staticmethod
     def log(lines, format, timestamp):
