@@ -17,52 +17,55 @@ class LogPlugin:
         self.client = client
 
     def on_connect(self):
-        self.timer = Timer(3600 - datetime.utcnow().minute * 60 - datetime.utcnow().second, self.hourly, args=[datetime.utcnow()])
+        self.schedule_hourly()
+
+    def schedule_hourly(self):
+        now = datetime.utcnow()
+        self.timer = Timer(3600 - now.minute * 60 - now.second, self.hourly, args=[now])
         self.timer.start()
+
+    def hourly(self, started):
+        self.log_wiki(started)
+        self.schedule_hourly()
 
     def on_disconnect(self):
         if self.timer is not None:
             self.timer.cancel()
 
-    def hourly(self, started):
-        self.log_chat(started)
-        self.timer = Timer(3600 - datetime.utcnow().minute * 60 - datetime.utcnow().second, self.hourly, args=[datetime.utcnow()])
-        self.timer.start()
-
     def on_join(self, data):
         username = data["attrs"]["name"]
-        self.log([f"{username} has joined Special:Chat"], f"{{timestamp}} -!- {{line}}", datetime.utcnow())
+        self.log_file([f"{username} has joined Special:Chat"], f"{{timestamp}} -!- {{line}}", datetime.utcnow())
 
     def on_logout(self, data):
         username = data["attrs"]["name"]
-        self.log([f"{username} has left Special:Chat"], f"{{timestamp}} -!- {{line}}", datetime.utcnow())
+        self.log_file([f"{username} has left Special:Chat"], f"{{timestamp}} -!- {{line}}", datetime.utcnow())
 
     def on_message(self, data):
         username = data["attrs"]["name"]
         message = data["attrs"]["text"]
         timestamp = datetime.utcfromtimestamp(int(data["attrs"]["timeStamp"]) / 1000)
-        self.log(message.splitlines(), f"{{timestamp}} <{username}> {{line}}", timestamp)
+        self.log_file(message.splitlines(), f"{{timestamp}} <{username}> {{line}}", timestamp)
 
-    def log_chat(self, started):
-        filepath = os.path.join("logs", f"chat-{started:%Y-%m-%d}.log")
+    def log_wiki(self, timestamp):
+        filepath = os.path.join("logs", f"chat-{timestamp:%Y-%m-%d}.log")
         try:
             with open(filepath, encoding="utf-8") as log_file:
                 log_data = log_file.read()
         except FileNotFoundError:
             return
-        title = f"Project:Chat/Logs/{started:%d %B %Y}"
+        title = f"Project:Chat/Logs/{timestamp:%d %B %Y}"
         page = self.client.open_page(title)
         if page.content:
             end = page.content.rindex("</pre>")
             page.content = page.content[:end] + log_data + page.content[end:]
         else:
-            page.content = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs|{started:%Y %d %B}]]'
+            page.content = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs|{timestamp:%Y %d %B}]]'
         page.save("Updating chat logs")
         os.remove(filepath)
         self.last_edit = datetime.utcnow()
 
     @staticmethod
-    def log(lines, format, timestamp):
+    def log_file(lines, format, timestamp):
         timestamp = f"[{timestamp:%Y-%m-%d %H:%M:%S}]"
         filepath = os.path.join("logs", f"chat-{datetime.utcnow():%Y-%m-%d}.log")
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -74,7 +77,7 @@ class LogPlugin:
     @Command(min_rank=Rank.MODERATOR)
     def updatelogs(self):
         """Log the chat now."""
-        self.log_chat()
+        self.log_wiki()
 
     @Command(sender=Argument(implicit=True))
     def status(self, sender):
