@@ -1,4 +1,3 @@
-import sys
 import json
 import logging
 from urllib.parse import urlencode, urlparse, urlunparse
@@ -60,7 +59,7 @@ class ChatBot:
                 "format": "json",
             }).json()
         if response["login"]["result"] != "Success":
-            raise ClientError(f"Log in failed: {result}")
+            raise ClientError(f'Log in failed: {response["login"]["result"]}')
         self.connect()
 
     def connect(self):
