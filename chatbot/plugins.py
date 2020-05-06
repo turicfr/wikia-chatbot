@@ -1,3 +1,4 @@
+from functools import wraps
 from enum import Enum, auto
 from shlex import shlex
 from datetime import datetime
@@ -36,6 +37,7 @@ def Plugin():
                 pass
             def on_message(self, data):
                 pass
+        @wraps(cls, updated=[])
         class Wrapper(cls, Default):
             commands = stack.pop()
         return Wrapper
