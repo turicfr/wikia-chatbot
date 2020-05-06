@@ -51,7 +51,8 @@ class LogPlugin:
             self.log_file(message.splitlines(), f"{{timestamp}} <{username}> {{line}}", timestamp)
 
     def is_ignored(self, username):
-        return self.client.users[username.lower()].ignored
+        user = self.client.users[username.lower()]
+        return user.ignored
 
     def log_wiki(self):
         try:

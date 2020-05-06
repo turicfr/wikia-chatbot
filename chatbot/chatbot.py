@@ -127,6 +127,10 @@ class ChatBot:
 
     def on_connect(self):
         self.logger.info(f"Logged in as {self.username}.")
+        self.send({
+            "msgType": "command",
+            "command": "initquery",
+        })
         for plugin, logger in self.plugins:
             try:
                 plugin.on_connect()
@@ -163,10 +167,6 @@ class ChatBot:
             handler(json.loads(data["data"]))
 
     def on_join(self, data):
-        self.send({
-            "msgType": "command",
-            "command": "initquery",
-        })
         username = data["attrs"]["name"]
         rank = Rank.from_attrs(data["attrs"])
         self.users[username.lower()] = User(username, rank, datetime.utcnow())
@@ -220,7 +220,8 @@ class ChatBot:
             except:
                 logger.exception("Failed on message.")
         username = data["attrs"]["name"]
-        if self.users[username.lower()].ignored:
+        user = self.users[username.lower()]
+        if user.ignored:
             return
         message = data["attrs"]["text"]
         if message.lstrip().startswith("!"):

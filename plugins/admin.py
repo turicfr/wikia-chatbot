@@ -21,8 +21,8 @@ class AdminPlugin:
             ignore = []
 
         username = data["attrs"]["name"]
-        if username in ignore:
-            user = self.client.users[target.name.lower()]
+        if username.lower() in ignore:
+            user = self.client.users[username.lower()]
             user.ignored = True
 
     @Command(sender=Argument(implicit=True), target=Argument(type=User), min_rank=Rank.MODERATOR)
@@ -41,9 +41,10 @@ class AdminPlugin:
         except FileNotFoundError:
             ignore = []
 
-        ignore.append(target.name)
-        with open("ignore.json", "w", encoding="utf-8") as ignore_file:
-            json.dump(ignore, ignore_file)
+        if target.name.lower() not in ignore:
+            ignore.append(target.name.lower())
+            with open("ignore.json", "w", encoding="utf-8") as ignore_file:
+                json.dump(ignore, ignore_file)
 
         self.client.send_message(f"{sender}, I'll now ignore all messages from {target}.")
 
@@ -63,11 +64,12 @@ class AdminPlugin:
         except FileNotFoundError:
             ignore = []
 
-        ignore.remove(target.name)
-        with open("ignore.json", "w", encoding="utf-8") as ignore_file:
-            json.dump(ignore, ignore_file)
+        if target.name.lower() in ignore:
+            ignore.remove(target.name.lower())
+            with open("ignore.json", "w", encoding="utf-8") as ignore_file:
+                json.dump(ignore, ignore_file)
 
-        self.client.send_message(f"{user}, I'll now listen to all messages from {target}.")
+        self.client.send_message(f"{sender}, I'll now listen to all messages from {target}.")
 
     @Command(min_rank=Rank.MODERATOR, target=Argument(type=User))
     def kick(self, target):
