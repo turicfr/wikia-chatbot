@@ -116,3 +116,22 @@ class TellPlugin:
                 f'{sender}, I delivered your message "{text}" to {target} '
                 f"on {datetime.utcfromtimestamp(delivered):%Y-%m-%d %H:%M:%S} UTC."
             )
+
+    @Command(sender=Argument(implicit=True), target=Argument(type=User))
+    def untell(self, sender, target):
+        """Cancel the delivery of a tell message."""
+        if sender == target:
+            self.client.send_message(f"{sender}, you can't untell yourself something.")
+            return
+
+        with self.open_tell() as tell:
+            messages = tell.get(target.name.lower(), [])
+            try:
+                message = next(m for m in messages if m["from"] == sender.name)
+            except StopIteration:
+                self.client.send_message(f"{sender}, I've got no message from you to {target}.")
+                return
+            messages.remove(message)
+            if not messages:
+                del tell[target.name.lower()]
+        self.client.send_message(f"{sender}, I've deleted your message to {target}.")
