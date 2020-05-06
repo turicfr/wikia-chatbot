@@ -1,6 +1,7 @@
 import sys
 import json
 import logging
+import argparse
 
 from chatbot import ChatBot, ClientError
 
@@ -14,7 +15,12 @@ from plugins.xo import XOPlugin
 from plugins.youtube import YouTubePlugin
 
 def main():
-    logging.basicConfig(format="[%(levelname)s] %(name)s: %(message)s", level=logging.NOTSET)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-v", "--verbose", action="store_true")
+    args = parser.parse_args()
+
+    level = logging.NOTSET if args.verbose else logging.WARNING
+    logging.basicConfig(format="[%(levelname)s] %(name)s: %(message)s", level=level)
     try:
         with open("config.json") as file:
             config = json.load(file)
