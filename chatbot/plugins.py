@@ -167,6 +167,7 @@ class Command:
 
         message = data["attrs"]["text"]
         lex = shlex(message[1:], posix=True)
+        lex.whitespace_split = True
         lex.get_token() # skip command name
 
         explicit_args = list(filter(lambda arg: arg.explicit, self.args))
@@ -188,7 +189,7 @@ class Command:
 
         args = {arg.name: implicit_value(arg) for arg in self.args if arg.implicit}
         for i, arg in enumerate(explicit_args):
-            if len(tokens) <= i:
+            if len(tokens) <= i or not tokens[i]:
                 if arg.required or arg.rest:
                     raise ArgumentError(f"Missing required argument: {arg.name}.")
                 break
