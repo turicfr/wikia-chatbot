@@ -22,11 +22,11 @@ class LogPlugin:
 
     def schedule_hourly(self):
         now = datetime.utcnow()
-        self.timer = Timer(3600 - now.minute * 60 - now.second, self.hourly, args=[now])
+        self.timer = Timer(3600 - now.minute * 60 - now.second, self.hourly)
         self.timer.start()
 
-    def hourly(self, started):
-        self.log_wiki(started)
+    def hourly(self):
+        self.log_wiki()
         self.schedule_hourly()
 
     def on_disconnect(self):
@@ -47,29 +47,27 @@ class LogPlugin:
         timestamp = datetime.utcfromtimestamp(int(data["attrs"]["timeStamp"]) / 1000)
         self.log_file(message.splitlines(), f"{{timestamp}} <{username}> {{line}}", timestamp)
 
-    def log_wiki(self, timestamp):
-        filepath = os.path.join("logs", f"chat-{timestamp:%Y-%m-%d}.log")
+    def log_wiki(self):
         try:
-            with open(filepath, encoding="utf-8") as log_file:
+            with open("chat.log", encoding="utf-8") as log_file:
                 log_data = log_file.read()
         except FileNotFoundError:
             return
-        title = f"Project:Chat/Logs/{timestamp:%d %B %Y}"
+        now = datetime.utcnow()
+        title = f"Project:Chat/Logs/{now:%d %B %Y}"
         page = self.client.open_page(title)
         if page.content:
             end = page.content.rindex("</pre>")
             page.content = page.content[:end] + log_data + page.content[end:]
         else:
-            page.content = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs|{timestamp:%Y %d %B}]]'
+            page.content = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs|{now:%Y %d %B}]]'
         page.save("Updating chat logs")
-        os.remove(filepath)
-        self.last_edit = datetime.utcnow()
+        os.remove("chat.log")
+        self.last_edit = now
 
     def log_file(self, lines, format, timestamp):
         timestamp = f"[{timestamp:%Y-%m-%d %H:%M:%S}]"
-        filepath = os.path.join("logs", f"chat-{datetime.utcnow():%Y-%m-%d}.log")
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        with open(filepath, "a", encoding="utf-8") as log_file:
+        with open("chat.log", "a", encoding="utf-8") as log_file:
             for line in lines:
                 self.logger.info(html.unescape(format.format(timestamp=timestamp, line=line)))
                 log_file.write(f"{html.escape(format.format(timestamp=timestamp, line=line), quote=False)}\n")
@@ -82,9 +80,8 @@ class LogPlugin:
     @Command(sender=Argument(implicit=True))
     def status(self, sender):
         """Report the last time the logs were uploaded and how many lines are currently in the log buffer."""
-        filepath = os.path.join("logs", f"chat-{datetime.utcnow():%Y-%m-%d}.log")
         try:
-            with open(filepath, encoding="utf-8") as log_file:
+            with open("chat.log", encoding="utf-8") as log_file:
                 lines = len(log_file.readlines())
         except FileNotFoundError:
             lines = 0
