@@ -14,7 +14,7 @@ class HelpPlugin:
     def help(self, sender, command=None):
         """Show this help."""
         commands = {}
-        for plugin in self.client.plugins:
+        for plugin, _ in self.client.plugins:
             commands.update(plugin.commands)
         if command is None:
             commands_desc = "\n".join(f"{command}: {command.desc}" for command in commands.values())
