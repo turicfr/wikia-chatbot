@@ -163,8 +163,8 @@ class Command:
             except ValueError:
                 raise ArgumentError(f"Invalid argument: {arg.name}.")
 
-        user = users.get(data["attrs"]["name"].lower())
-        if user is None or user.rank < self.min_rank:
+        user = users[data["attrs"]["name"].lower()]
+        if user.rank < self.min_rank:
             raise RankError()
 
         message = data["attrs"]["text"]
