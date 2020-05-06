@@ -43,6 +43,8 @@ class ChatBot:
             self.plugins.append((plugin, logger))
 
     def start(self):
+        if not self.plugins:
+            self.logger.warning("No plugins loaded.")
         self.logger.info(f"Logging in as {self.username}...")
         response = self.session.post(self.site + "api.php", params={
             "action": "login",
