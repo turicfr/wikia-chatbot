@@ -6,10 +6,12 @@ from chatbot.plugins import Plugin, Command, Argument
 class XOPlugin:
     def __init__(self):
         self.client = None
+        self.logger = None
         self.board = None
 
-    def on_load(self, client):
+    def on_load(self, client, logger):
         self.client = client
+        self.logger = logger
 
     @Command(sender=Argument(implicit=True), position=Argument(required=False, type=int))
     def xo(self, sender, position=None):

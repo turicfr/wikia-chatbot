@@ -18,9 +18,11 @@ def format_seconds(seconds):
 class SeenPlugin:
     def __init__(self):
         self.client = None
+        self.logger = None
 
-    def on_load(self, client):
+    def on_load(self, client, logger):
         self.client = client
+        self.logger = logger
 
     @Command(timestamp=Argument(implicit=True), user=Argument(type=User))
     def seen(self, timestamp, user):

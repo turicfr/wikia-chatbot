@@ -1,5 +1,4 @@
 import os
-import sys
 import html
 from datetime import datetime
 from threading import Timer
@@ -10,11 +9,13 @@ from chatbot.plugins import Plugin, Command, Argument, Rank
 class LogPlugin:
     def __init__(self):
         self.client = None
+        self.logger = None
         self.timer = None
         self.last_edit = None
 
-    def on_load(self, client):
+    def on_load(self, client, logger):
         self.client = client
+        self.logger = logger
 
     def on_connect(self):
         self.schedule_hourly()
@@ -64,14 +65,13 @@ class LogPlugin:
         os.remove(filepath)
         self.last_edit = datetime.utcnow()
 
-    @staticmethod
-    def log_file(lines, format, timestamp):
+    def log_file(self, lines, format, timestamp):
         timestamp = f"[{timestamp:%Y-%m-%d %H:%M:%S}]"
         filepath = os.path.join("logs", f"chat-{datetime.utcnow():%Y-%m-%d}.log")
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "a", encoding="utf-8") as log_file:
             for line in lines:
-                print(html.unescape(format.format(timestamp=timestamp, line=line)), file=sys.stderr)
+                self.logger.info(html.unescape(format.format(timestamp=timestamp, line=line)))
                 log_file.write(f"{html.escape(format.format(timestamp=timestamp, line=line), quote=False)}\n")
 
     @Command(min_rank=Rank.MODERATOR)

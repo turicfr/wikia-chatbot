@@ -1,5 +1,6 @@
 import sys
 import json
+import logging
 from urllib.parse import urlencode, urlparse, urlunparse
 from datetime import datetime
 
@@ -20,6 +21,9 @@ class ChatBot:
         self.site = site
         self.session = requests.Session()
         self.sio = socketio.Client()
+        self.logger = logging.getLogger(__name__)
+        for handler in logging.root.handlers:
+            handler.addFilter(logging.Filter(__package__))
         for event, handler in {
             "connect": self.on_connect,
             "connect_error": self.on_connect_error,
@@ -31,15 +35,16 @@ class ChatBot:
         self.plugins = []
 
     def add_plugin(self, plugin):
+        logger = logging.getLogger(f"{__package__}.{type(plugin).__name__}")
         try:
-            plugin.on_load(self)
-        except Exception as e:
-            print(f"Plugin {plugin} failed to load: {e}", file=sys.stderr)
+            plugin.on_load(self, logger)
+        except:
+            logger.exception("Failed to load.")
         else:
-            self.plugins.append(plugin)
+            self.plugins.append((plugin, logger))
 
     def start(self):
-        print(f"Logging in as {self.username}...", file=sys.stderr)
+        self.logger.info(f"Logging in as {self.username}...")
         response = self.session.post(self.site + "api.php", params={
             "action": "login",
             "lgname": self.username,
@@ -120,28 +125,28 @@ class ChatBot:
         self.on_disconnect()
 
     def on_connect(self):
-        print(f"Logged in as {self.username}.", file=sys.stderr)
-        for plugin in self.plugins:
+        self.logger.info(f"Logged in as {self.username}.")
+        for plugin, logger in self.plugins:
             try:
                 plugin.on_connect()
-            except Exception as e:
-                print(f"Plugin {plugin} failed on connect: {e}", file=sys.stderr)
+            except:
+                logger.exception("Failed on connect.")
 
     def on_connect_error(self):
-        print("Connection error.", file=sys.stderr)
-        for plugin in self.plugins:
+        self.logger.info("Connection error.")
+        for plugin, logger in self.plugins:
             try:
                 plugin.on_connect_error()
-            except Exception as e:
-                print(f"Plugin {plugin} failed on connect error: {e}", file=sys.stderr)
+            except:
+                logger.exception("Failed on connect error.")
 
     def on_disconnect(self):
-        print("Logged out.", file=sys.stderr)
-        for plugin in self.plugins:
+        self.logger.info("Logged out.")
+        for plugin, logger in self.plugins:
             try:
                 plugin.on_disconnect()
-            except Exception as e:
-                print(f"Plugin {plugin} failed on disconnect: {e}", file=sys.stderr)
+            except:
+                logger.exception("Failed on disconnect.")
 
     def on_event(self, data):
         handler = {
@@ -164,11 +169,11 @@ class ChatBot:
         username = data["attrs"]["name"]
         rank = Rank.from_attrs(data["attrs"])
         self.users[username.lower()] = User(username, rank, datetime.utcnow())
-        for plugin in self.plugins:
+        for plugin, logger in self.plugins:
             try:
                 plugin.on_join(data)
-            except Exception as e:
-                print(f"Plugin {plugin} failed on join: {e}", file=sys.stderr)
+            except:
+                logger.exception("Failed on join.")
 
     def on_initial(self, data):
         for user in data["collections"]["users"]["models"]:
@@ -176,48 +181,48 @@ class ChatBot:
             username = attrs["name"]
             rank = Rank.from_attrs(attrs)
             self.users[username.lower()] = User(username, rank, datetime.utcnow())
-        for plugin in self.plugins:
+        for plugin, logger in self.plugins:
             try:
                 plugin.on_initial(data)
-            except Exception as e:
-                print(f"Plugin {plugin} failed on initial: {e}", file=sys.stderr)
+            except:
+                logger.exception("Failed on initial.")
 
     def on_logout(self, data):
         username = data["attrs"]["name"]
         user = self.users[username.lower()]
         user.connected = False
         user.seen = datetime.utcnow()
-        for plugin in self.plugins:
+        for plugin, logger in self.plugins:
             try:
                 plugin.on_logout(data)
-            except Exception as e:
-                print(f"Plugin {plugin} failed on logout: {e}", file=sys.stderr)
+            except:
+                logger.exception("Failed on logout.")
 
     def on_kick(self, data):
-        for plugin in self.plugins:
+        for plugin, logger in self.plugins:
             try:
                 plugin.on_kick(data)
-            except Exception as e:
-                print(f"Plugin {plugin} failed on kick: {e}", file=sys.stderr)
+            except:
+                logger.exception("Failed on kick.")
 
     def on_ban(self, data):
-        for plugin in self.plugins:
+        for plugin, logger in self.plugins:
             try:
                 plugin.on_ban(data)
-            except Exception as e:
-                print(f"Plugin {plugin} failed on ban: {e}", file=sys.stderr)
+            except:
+                logger.exception("Failed on ban.")
 
     def on_message(self, data):
-        for plugin in self.plugins:
+        for plugin, logger in self.plugins:
             try:
                 plugin.on_message(data)
-            except Exception as e:
-                print(f"Plugin {plugin} failed on message: {e}", file=sys.stderr)
+            except:
+                logger.exception("Failed on message.")
         username = data["attrs"]["name"]
         message = data["attrs"]["text"]
         if message.lstrip().startswith("!"):
             command_name = message.split()[0][1:]
-            for plugin in self.plugins:
+            for plugin, logger in self.plugins:
                 command = plugin.commands.get(command_name)
                 if command is None:
                     continue
@@ -227,6 +232,6 @@ class ChatBot:
                     self.send_message(f"{username}, you don't have permission for {command}.")
                 except ArgumentError as e:
                     self.send_message(f"{username}, {e}")
-                except Exception as e:
-                    print(f"Command {command} failed: {e}", file=sys.stderr)
+                except:
+                    logger.exception(f"Command {command} failed.")
                 break

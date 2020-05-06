@@ -4,9 +4,11 @@ from chatbot.plugins import Plugin, Command, Argument
 class HelloPlugin:
     def __init__(self):
         self.client = None
+        self.logger = None
 
-    def on_load(self, client):
+    def on_load(self, client, logger):
         self.client = client
+        self.logger = logger
 
     @Command(sender=Argument(implicit=True))
     def hello(self, sender):

@@ -1,5 +1,6 @@
 import sys
 import json
+import logging
 
 from chatbot import ChatBot, ClientError
 
@@ -13,11 +14,12 @@ from plugins.xo import XOPlugin
 from plugins.youtube import YouTubePlugin
 
 def main():
+    logging.basicConfig(format="[%(levelname)s] %(name)s: %(message)s", level=logging.NOTSET)
     try:
         with open("config.json") as file:
             config = json.load(file)
     except FileNotFoundError:
-        print(f"Error: Cannot read config.", file=sys.stderr)
+        logging.critical("Cannot read config.")
         sys.exit(1)
     username = config["username"]
     password = config["password"]
@@ -35,7 +37,7 @@ def main():
     try:
         bot.start()
     except ClientError as e:
-        print(f"Error: {e}", file=sys.stderr)
+        logging.critical(str(e))
         sys.exit(1)
 
 if __name__ == "__main__":

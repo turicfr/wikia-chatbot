@@ -5,9 +5,11 @@ from chatbot.plugins import Plugin, Command, Argument
 class AdminPlugin:
     def __init__(self):
         self.client = None
+        self.logger = None
 
-    def on_load(self, client):
+    def on_load(self, client, logger):
         self.client = client
+        self.logger = logger
 
     @Command(min_rank=Rank.MODERATOR, target=Argument(type=User))
     def kick(self, target):

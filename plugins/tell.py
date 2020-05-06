@@ -9,6 +9,7 @@ from chatbot.plugins import Plugin, Command, Argument
 class TellPlugin:
     def __init__(self):
         self.client = None
+        self.logger = None
         self.just_joined = set()
 
     @staticmethod
@@ -26,8 +27,9 @@ class TellPlugin:
                 with open("tell.json", "w", encoding="utf-8") as tell_file:
                     json.dump(tell, tell_file)
 
-    def on_load(self, client):
+    def on_load(self, client, logger):
         self.client = client
+        self.logger = logger
 
     def on_join(self, data):
         self.just_joined.add(data["attrs"]["name"])

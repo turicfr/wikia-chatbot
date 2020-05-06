@@ -7,17 +7,20 @@ from chatbot.plugins import Plugin
 
 @Plugin()
 class YouTubePlugin:
+    URL_REGEX = re.compile(r"(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?(?:.+&)?v=))(?P<id>[0-9A-Za-z_-]{11})")
+
     def __init__(self, key):
         self.key = key
         self.client = None
-        self.url_regex = re.compile(r"(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?(?:.+&)?v=))(?P<id>[0-9A-Za-z_-]{11})")
+        self.logger = None
 
-    def on_load(self, client):
+    def on_load(self, client, logger):
         self.client = client
+        self.logger = logger
 
     def on_message(self, data):
         message = data["attrs"]["text"]
-        for video_id in self.url_regex.findall(message):
+        for video_id in self.URL_REGEX.findall(message):
             item = requests.get("https://www.googleapis.com/youtube/v3/videos", params={
                 "id": video_id,
                 "key": self.key,
