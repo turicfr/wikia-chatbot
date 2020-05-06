@@ -6,6 +6,7 @@ class User:
         self.rank = rank
         self.seen = seen
         self.connected = connected
+        self.ignored = False
 
     def __eq__(self, user):
         return self.name == user.name

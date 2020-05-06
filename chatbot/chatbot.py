@@ -220,6 +220,8 @@ class ChatBot:
             except:
                 logger.exception("Failed on message.")
         username = data["attrs"]["name"]
+        if self.users[username.lower()].ignored:
+            return
         message = data["attrs"]["text"]
         if message.lstrip().startswith("!"):
             command_name = message.split()[0][1:]

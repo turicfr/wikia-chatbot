@@ -1,3 +1,5 @@
+import json
+
 from chatbot.users import User, Rank
 from chatbot.plugins import Plugin, Command, Argument
 
@@ -10,6 +12,62 @@ class AdminPlugin:
     def on_load(self, client, logger):
         self.client = client
         self.logger = logger
+
+    def on_join(self, data):
+        try:
+            with open("ignore.json", encoding="utf-8") as ignore_file:
+                ignore = json.load(ignore_file)
+        except FileNotFoundError:
+            ignore = []
+
+        username = data["attrs"]["name"]
+        if username in ignore:
+            user = self.client.users[target.name.lower()]
+            user.ignored = True
+
+    @Command(sender=Argument(implicit=True), target=Argument(type=User), min_rank=Rank.MODERATOR)
+    def ignore(self, sender, target):
+        """Disable bot commands and chat logging for a user."""
+        user = self.client.users.get(target.name.lower())
+        if user is not None:
+            if user == sender:
+                self.client.send_message(f"{sender}, you can't ignore yourself.")
+                return
+            user.ignored = True
+
+        try:
+            with open("ignore.json", encoding="utf-8") as ignore_file:
+                ignore = json.load(ignore_file)
+        except FileNotFoundError:
+            ignore = []
+
+        ignore.append(target.name)
+        with open("ignore.json", "w", encoding="utf-8") as ignore_file:
+            json.dump(ignore, ignore_file)
+
+        self.client.send_message(f"{sender}, I'll now ignore all messages from {target}.")
+
+    @Command(sender=Argument(implicit=True), target=Argument(type=User), min_rank=Rank.MODERATOR)
+    def unignore(self, sender, target):
+        """Enable bot commands and chat logging for a user."""
+        user = self.client.users.get(target.name.lower())
+        if user is not None:
+            if user == sender:
+                self.client.send_message(f"{sender}, you can't unignore yourself.")
+                return
+            user.ignored = False
+
+        try:
+            with open("ignore.json", encoding="utf-8") as ignore_file:
+                ignore = json.load(ignore_file)
+        except FileNotFoundError:
+            ignore = []
+
+        ignore.remove(target.name)
+        with open("ignore.json", "w", encoding="utf-8") as ignore_file:
+            json.dump(ignore, ignore_file)
+
+        self.client.send_message(f"{user}, I'll now listen to all messages from {target}.")
 
     @Command(min_rank=Rank.MODERATOR, target=Argument(type=User))
     def kick(self, target):
