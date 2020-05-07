@@ -169,7 +169,7 @@ class ChatBot:
     def on_join(self, data):
         username = data["attrs"]["name"]
         rank = Rank.from_attrs(data["attrs"])
-        self.users[username.lower()] = User(username, rank, datetime.utcnow())
+        self.users[username.lower()] = User(username, rank)
         for plugin, logger in self.plugins:
             try:
                 plugin.on_join(data)
@@ -181,7 +181,7 @@ class ChatBot:
             attrs = user["attrs"]
             username = attrs["name"]
             rank = Rank.from_attrs(attrs)
-            self.users[username.lower()] = User(username, rank, datetime.utcnow())
+            self.users[username.lower()] = User(username, rank)
         for plugin, logger in self.plugins:
             try:
                 plugin.on_initial(data)
@@ -192,7 +192,6 @@ class ChatBot:
         username = data["attrs"]["name"]
         user = self.users[username.lower()]
         user.connected = False
-        user.seen = datetime.utcnow()
         for plugin, logger in self.plugins:
             try:
                 plugin.on_logout(data)

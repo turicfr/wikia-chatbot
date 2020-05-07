@@ -156,7 +156,7 @@ class Command:
             if arg.type is User:
                 user = users.get(value.lower())
                 if user is None:
-                    return User(value, None, None, False)
+                    return User(value, None, False)
                 return user
             try:
                 return arg.type(value)

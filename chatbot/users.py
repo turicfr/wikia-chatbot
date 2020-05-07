@@ -1,10 +1,9 @@
 from enum import IntEnum, unique
 
 class User:
-    def __init__(self, name, rank, seen, connected=True):
+    def __init__(self, name, rank, connected=True):
         self.name = name
         self.rank = rank
-        self.seen = seen
         self.connected = connected
         self.ignored = False
 
