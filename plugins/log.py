@@ -22,11 +22,11 @@ class LogPlugin:
 
     def schedule_hourly(self):
         now = datetime.utcnow()
-        self.timer = Timer(3600 - now.minute * 60 - now.second, self.hourly)
+        self.timer = Timer(3600 - now.minute * 60 - now.second, self.hourly, args=[now])
         self.timer.start()
 
-    def hourly(self):
-        self.log_wiki()
+    def hourly(self, started):
+        self.log_wiki(started)
         self.schedule_hourly()
 
     def on_disconnect(self):
@@ -54,23 +54,22 @@ class LogPlugin:
         user = self.client.users[username.lower()]
         return user.ignored
 
-    def log_wiki(self):
+    def log_wiki(self, timestamp):
         try:
             with open("chat.log", encoding="utf-8") as log_file:
                 log_data = log_file.read()
         except FileNotFoundError:
             return
-        now = datetime.utcnow()
-        title = f"Project:Chat/Logs/{now:%d %B %Y}"
+        title = f"Project:Chat/Logs/{timestamp:%d %B %Y}"
         page = self.client.open_page(title)
         if page.content:
             end = page.content.rindex("</pre>")
             page.content = page.content[:end] + log_data + page.content[end:]
         else:
-            page.content = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs|{now:%Y %d %B}]]'
+            page.content = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs|{timestamp:%Y %d %B}]]'
         page.save("Updating chat logs")
         os.remove("chat.log")
-        self.last_edit = now
+        self.last_edit = datetime.utcnow()
 
     def log_file(self, lines, format, timestamp):
         timestamp = f"[{timestamp:%Y-%m-%d %H:%M:%S}]"
@@ -82,7 +81,7 @@ class LogPlugin:
     @Command(min_rank=Rank.MODERATOR)
     def updatelogs(self):
         """Log the chat now."""
-        self.log_wiki()
+        self.log_wiki(datetime.utcnow())
 
     @Command(sender=Argument(implicit=True))
     def status(self, sender):
