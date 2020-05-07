@@ -43,6 +43,17 @@ class LogPlugin:
         if not self.is_ignored(username):
             self.log_file([f"{username} has left Special:Chat"], f"{{timestamp}} -!- {{line}}", datetime.utcnow())
 
+    def on_kick(self, data):
+        username = data["attrs"]["kickedUserName"]
+        moderator = data["attrs"]["moderatorName"]
+        self.log_file([f"{username} was kicked from Special:Chat by {moderator}"], f"{{timestamp}} -!- {{line}}", datetime.utcnow())
+
+    def on_ban(self, data):
+        username = data["attrs"]["kickedUserName"]
+        moderator = data["attrs"]["moderatorName"]
+        action = "unbanned" if data["attrs"]["time"] == 0 else "banned"
+        self.log_file([f"{username} was {action} from Special:Chat by {moderator}"], f"{{timestamp}} -!- {{line}}", datetime.utcnow())
+
     def on_message(self, data):
         username = data["attrs"]["name"]
         if not self.is_ignored(username):
