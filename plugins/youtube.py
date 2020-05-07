@@ -30,6 +30,6 @@ class YouTubePlugin:
             published_at = datetime.strptime(item["snippet"]["publishedAt"], "%Y-%m-%dT%H:%M:%S.%fZ")
             self.client.send_message(
                 f'YouTube: {item["snippet"]["title"]} · {duration} '
-                f'· by {item["snippet"]["channelTitle"]} on {published_at:%d %B, %Y} '
-                f'· {int(item["statistics"]["viewCount"]):,} views'
+                f'\xb7 by {item["snippet"]["channelTitle"]} on {published_at:%d %B, %Y} '
+                f'\xb7 {int(item["statistics"]["viewCount"]):,} views'
             )
