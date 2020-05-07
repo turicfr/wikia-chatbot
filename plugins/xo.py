@@ -26,44 +26,36 @@ class XOPlugin:
             if row not in range(3) or col not in range(3):
                 self.client.send_message("Invalid position, please choose another.")
                 return
+
             if self.board[row][col] in ["X", "O"]:
                 self.client.send_message("Position is already occupied, please choose another.")
                 return
+
             self.board[row][col] = "X"
             if self.check_winner():
-                self.client.send_message(f"{self.print_board()}\n{sender} won the match!")
+                self.client.send_message(f"{self.board_str()}\n{sender} won the match!")
                 return
 
             options = [(i, j) for i, row in enumerate(self.board) for j, cell in enumerate(row) if cell not in ["X", "O"]]
             if not options:
-                self.client.send_message(f"{self.print_board()}\nTie!")
+                self.client.send_message(f"{self.board_str()}\nTie!")
                 return
+
             row, col = choice(options)
             self.board[row][col] = "O"
             if self.check_winner():
-                self.client.send_message(f"{self.print_board()}\nI won the match!")
+                self.client.send_message(f"{self.board_str()}\nI won the match!")
                 return
 
-        self.client.send_message(f"{self.print_board()}\nIt's {sender}'s turn: please choose where to place X.")
+        self.client.send_message(f"{self.board_str()}\nIt's {sender}'s turn: please choose where to place X.")
 
-    def print_board(self):
-        return "\n═╬═╬═\n".join("║".join(map(str, row)) for row in self.board)
+    def board_str(self):
+        return "\n\u2550\u256c\u2550\u256c\u2550\n".join("\u2551".join(map(str, row)) for row in self.board)
 
     def check_winner(self):
-        for row in self.board:
-            if len(set(row)) == 1:
-                return True
-        for col in zip(*self.board):
-            if len(set(col)) == 1:
-                return True
-        if len(set(self.board[i][i] for i in range(len(self.board)))) == 1:
-            return True
-        if len(set(self.board[i][2 - i] for i in range(len(self.board)))) == 1:
-            return True
-        return False
-        # return any(len(set(seq)) == 1 for seq in (
-        #     *self.board,
-        #     *zip(*self.board),
-        #     (self.board[i][i] for i in range(len(self.board))),
-        #     (self.board[i][2 - i] for i in range(len(self.board))),
-        # ))
+        return any(len(set(seq)) == 1 for seq in (
+            *self.board,
+            *zip(*self.board),
+            (self.board[i][i] for i in range(len(self.board))),
+            (self.board[i][2 - i] for i in range(len(self.board))),
+        ))
