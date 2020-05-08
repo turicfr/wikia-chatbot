@@ -10,22 +10,27 @@ class HelpPlugin:
         self.client = client
         self.logger = logger
 
-    @Command(sender=Argument(implicit=True), command=Argument(required=False))
-    def help(self, sender, command=None):
+    @Command(sender=Argument(implicit=True), command_name=Argument(required=False))
+    def help(self, sender, command_name=None):
         """Show this help."""
         commands = {}
         for plugin, _ in self.client.plugins:
             commands.update(plugin.commands)
-        if command is None:
+        if command_name is None:
             self.client.send_message(
-                f"{sender}, all defined commands are:\n"
-                f'{", ".join(str(command) for command in commands.values())}'
+                f'{sender}, available commands: {", ".join(map(str, commands.values()))}\n'
+                f"Use !help <command_name> for specific information."
             )
         else:
-            command_name = command
+            if command_name.startswith("!"):
+                command_name = command_name[1:]
             command = commands.get(command_name)
             if command is None:
                 self.client.send_message(f"Command {command_name} is unavailable.")
                 return
+            message = ""
+            if command.doc is not None:
+                message += f"{command.doc}\n"
             explicit_args = filter(lambda arg: arg.explicit, command.args)
-            self.client.send_message(f'{command.desc}\n{command} {" ".join(map(str, explicit_args))}')
+            message += f'{command} {" ".join(map(str, explicit_args))}'
+            self.client.send_message(message)

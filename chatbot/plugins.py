@@ -126,7 +126,7 @@ class Command:
         self.args = list(kwargs.values())
         self.handler = None
         self.name = None
-        self.desc = None
+        self.doc = None
 
     def __call__(self, *args, **kwargs):
         if self.handler is None:
@@ -139,7 +139,7 @@ class Command:
     def bind(self, handler):
         self.handler = handler
         self.name = handler.__name__
-        self.desc = handler.__doc__
+        self.doc = handler.__doc__
         stack[-1][self.name] = self
         return self
 
