@@ -17,8 +17,10 @@ class HelpPlugin:
         for plugin, _ in self.client.plugins:
             commands.update(plugin.commands)
         if command is None:
-            commands_desc = "\n".join(f"{command}: {command.desc}" for command in commands.values())
-            self.client.send_message(f'{sender}, all defined commands are:\n{commands_desc}')
+            self.client.send_message(
+                f"{sender}, all defined commands are:\n"
+                f'{", ".join(str(command) for command in commands.values())}'
+            )
         else:
             command_name = command
             command = commands.get(command_name)
