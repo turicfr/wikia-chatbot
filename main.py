@@ -12,6 +12,7 @@ from plugins.seen import SeenPlugin
 from plugins.tell import TellPlugin
 from plugins.hello import HelloPlugin
 from plugins.xo import XOPlugin
+from plugins.twitter import TwitterPlugin
 from plugins.youtube import YouTubePlugin
 
 def main():
@@ -38,6 +39,7 @@ def main():
     bot.add_plugin(TellPlugin())
     bot.add_plugin(HelloPlugin())
     bot.add_plugin(XOPlugin())
+    bot.add_plugin(TwitterPlugin())
     if config.get("youtube"):
         bot.add_plugin(YouTubePlugin(config["youtube"]))
     try:
