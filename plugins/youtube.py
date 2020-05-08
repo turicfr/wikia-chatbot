@@ -20,16 +20,16 @@ class YouTubePlugin:
 
     def on_message(self, data):
         message = data["attrs"]["text"]
-        for video_id in self.URL_REGEX.findall(message):
+        for match in self.URL_REGEX.finditer(message):
             item = requests.get("https://www.googleapis.com/youtube/v3/videos", params={
-                "id": video_id,
+                "id": match["id"],
                 "key": self.key,
                 "part": "snippet, statistics, contentDetails",
             }).json()["items"][0]
             duration = isodate.parse_duration(item["contentDetails"]["duration"])
             published_at = datetime.strptime(item["snippet"]["publishedAt"], "%Y-%m-%dT%H:%M:%S.%fZ")
             self.client.send_message(
-                f'YouTube: {item["snippet"]["title"]} \xb7 {duration} '
-                f'\xb7 by {item["snippet"]["channelTitle"]} on {published_at:%d %B, %Y} '
-                f'\xb7 {int(item["statistics"]["viewCount"]):,} views'
+                f'YouTube: {item["snippet"]["title"]} \u2022 {duration} '
+                f'\u2022 by {item["snippet"]["channelTitle"]} on {published_at:%d %B, %Y} '
+                f'\u2022 {int(item["statistics"]["viewCount"]):,} views'
             )
