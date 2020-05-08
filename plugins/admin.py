@@ -27,7 +27,7 @@ class AdminPlugin:
 
     @Command(sender=Argument(implicit=True), target=Argument(type=User), min_rank=Rank.MODERATOR)
     def ignore(self, sender, target):
-        """Disable bot commands and chat logging for a user."""
+        """Ignore bot commands from a user."""
         user = self.client.users.get(target.name.lower())
         if user is not None:
             if user == sender:

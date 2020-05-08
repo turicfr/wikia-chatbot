@@ -35,13 +35,11 @@ class LogPlugin:
 
     def on_join(self, data):
         username = data["attrs"]["name"]
-        if not self.is_ignored(username):
-            self.log_file([f"{username} has joined Special:Chat"], f"{{timestamp}} -!- {{line}}", datetime.utcnow())
+        self.log_file([f"{username} has joined Special:Chat"], f"{{timestamp}} -!- {{line}}", datetime.utcnow())
 
     def on_logout(self, data):
         username = data["attrs"]["name"]
-        if not self.is_ignored(username):
-            self.log_file([f"{username} has left Special:Chat"], f"{{timestamp}} -!- {{line}}", datetime.utcnow())
+        self.log_file([f"{username} has left Special:Chat"], f"{{timestamp}} -!- {{line}}", datetime.utcnow())
 
     def on_kick(self, data):
         username = data["attrs"]["kickedUserName"]
@@ -56,14 +54,9 @@ class LogPlugin:
 
     def on_message(self, data):
         username = data["attrs"]["name"]
-        if not self.is_ignored(username):
-            message = data["attrs"]["text"]
-            timestamp = datetime.utcfromtimestamp(int(data["attrs"]["timeStamp"]) / 1000)
-            self.log_file(message.splitlines(), f"{{timestamp}} <{username}> {{line}}", timestamp)
-
-    def is_ignored(self, username):
-        user = self.client.users[username.lower()]
-        return user.ignored
+        message = data["attrs"]["text"]
+        timestamp = datetime.utcfromtimestamp(int(data["attrs"]["timeStamp"]) / 1000)
+        self.log_file(message.splitlines(), f"{{timestamp}} <{username}> {{line}}", timestamp)
 
     def log_wiki(self, timestamp):
         try:
