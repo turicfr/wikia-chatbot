@@ -28,12 +28,13 @@ class AdminPlugin:
     @Command(sender=Argument(implicit=True), target=Argument(type=User), min_rank=Rank.MODERATOR)
     def ignore(self, sender, target):
         """Ignore bot commands from a user."""
-        user = self.client.users.get(target.name.lower())
-        if user is not None:
-            if user == sender:
-                self.client.send_message(f"{sender}, you can't ignore yourself.")
-                return
-            user.ignored = True
+        if target == sender:
+            self.client.send_message(f"{sender}, you can't ignore yourself.")
+            return
+        if target == self.client.user:
+            self.client.send_message(f"{sender}, I can't ignore myself.")
+            return
+        target.ignored = True
 
         try:
             with open("ignore.json", encoding="utf-8") as ignore_file:
@@ -51,12 +52,13 @@ class AdminPlugin:
     @Command(sender=Argument(implicit=True), target=Argument(type=User), min_rank=Rank.MODERATOR)
     def unignore(self, sender, target):
         """Enable bot commands and chat logging for a user."""
-        user = self.client.users.get(target.name.lower())
-        if user is not None:
-            if user == sender:
-                self.client.send_message(f"{sender}, you can't unignore yourself.")
-                return
-            user.ignored = False
+        if target == sender:
+            self.client.send_message(f"{sender}, you can't unignore yourself.")
+            return
+        if target == self.client.user:
+            self.client.send_message(f"{sender}, I can't unignore myself.")
+            return
+        target.ignored = False
 
         try:
             with open("ignore.json", encoding="utf-8") as ignore_file:
@@ -74,6 +76,9 @@ class AdminPlugin:
     @Command(min_rank=Rank.MODERATOR, target=Argument(type=User))
     def kick(self, target):
         """Kick a user."""
+        if target == self.client.user:
+            self.client.send_message(f"{sender}, I can't kick myself.")
+            return
         self.client.kick(target.name)
 
     @Command(

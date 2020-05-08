@@ -18,6 +18,7 @@ class ChatBot:
         self.username = username
         self.password = password
         self.site = site
+        self.user = User(self.username, None, False)
         self.session = requests.Session()
         self.sio = socketio.Client()
         self.logger = logging.getLogger(__name__)
@@ -45,17 +46,17 @@ class ChatBot:
     def start(self):
         if not self.plugins:
             self.logger.warning("No plugins loaded.")
-        self.logger.info(f"Logging in as {self.username}...")
+        self.logger.info(f"Logging in as {self.user}...")
         response = self.session.post(self.site + "api.php", params={
             "action": "login",
-            "lgname": self.username,
+            "lgname": self.user.name,
             "lgpassword": self.password,
             "format": "json",
         }).json()
         if response["login"]["result"] == "NeedToken":
             response = self.session.post(self.site + "api.php", data={
                 "action": "login",
-                "lgname": self.username,
+                "lgname": self.user.name,
                 "lgpassword": self.password,
                 "lgtoken": response["login"]["token"],
                 "format": "json",
@@ -77,7 +78,7 @@ class ChatBot:
         }).json()
         url = list(urlparse(f'https://{wikia_data["chatServerHost"]}/socket.io/'))
         url[4] = urlencode({
-            "name": self.username,
+            "name": self.user.name,
             "key": wikia_data["chatkey"],
             "roomId": wikia_data["roomId"],
             "serverId": api_data["query"]["wikidesc"]["id"],
@@ -96,7 +97,7 @@ class ChatBot:
     def send_message(self, text):
         self.send({
             "msgType": "chat",
-            "name": self.username,
+            "name": self.user.name,
             "text": text,
         })
 
@@ -126,7 +127,7 @@ class ChatBot:
         self.on_disconnect()
 
     def on_connect(self):
-        self.logger.info(f"Logged in as {self.username}.")
+        self.logger.info(f"Logged in as {self.user}.")
         self.send({
             "msgType": "command",
             "command": "initquery",
@@ -169,7 +170,10 @@ class ChatBot:
     def on_join(self, data):
         username = data["attrs"]["name"]
         rank = Rank.from_attrs(data["attrs"])
-        self.users[username.lower()] = User(username, rank)
+        user = User(username, rank)
+        self.users[user.name.lower()] = user
+        if user.name == self.username:
+            self.user = user
         for plugin, logger in self.plugins:
             try:
                 plugin.on_join(data)
@@ -232,9 +236,9 @@ class ChatBot:
                 try:
                     command(plugin, self.users, data)
                 except RankError:
-                    self.send_message(f"{username}, you don't have permission for {command}.")
+                    self.send_message(f"{user}, you don't have permission for {command}.")
                 except ArgumentError as e:
-                    self.send_message(f"{username}, {e}")
+                    self.send_message(f"{user}, {e}")
                 except:
                     logger.exception(f"Command {command} failed.")
                 break

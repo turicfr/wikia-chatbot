@@ -57,10 +57,12 @@ class TellPlugin:
     )
     def tell(self, sender, timestamp, target, message):
         """Deliver an offline user a message."""
-        if sender == target:
+        if target == sender:
             self.client.send_message(f"{sender}, you can't leave a message to yourself.")
             return
-
+        if target == self.client.user:
+            self.client.send_message(f"{sender}, thank you for the message!")
+            return
         if target.connected:
             self.client.send_message(f"{target} is already here.")
             return
@@ -88,8 +90,11 @@ class TellPlugin:
                 response = ["you currently don't have tell messages to anyone."]
             self.client.send_message("\n".join(f"{sender}, {line}" for line in response))
         else:
-            if sender == target:
+            if target == sender:
                 self.client.send_message(f"{sender}, you can't tell yourself.")
+                return
+            if target == self.client.user:
+                self.client.send_message(f"{sender}, I can't tell myself.")
                 return
 
             with self.open_tell() as tell:
@@ -122,8 +127,11 @@ class TellPlugin:
     @Command(sender=Argument(implicit=True), target=Argument(type=User))
     def untell(self, sender, target):
         """Cancel the delivery of a tell message."""
-        if sender == target:
-            self.client.send_message(f"{sender}, you can't untell yourself something.")
+        if target == sender:
+            self.client.send_message(f"{sender}, you can't untell yourself.")
+            return
+        if target == self.client.user:
+            self.client.send_message(f"{sender}, I can't untell myself.")
             return
 
         with self.open_tell() as tell:
