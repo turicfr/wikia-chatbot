@@ -102,3 +102,13 @@ class LogPlugin:
             message += f"I last updated the logs {(datetime.utcnow() - self.last_edit).total_seconds() / 60:.2f} minutes ago."
         message += f" There are currently ~{lines} lines in the log buffer."
         self.client.send_message(message)
+
+    @Command(sender=Argument(implicit=True), timestamp=Argument(implicit=True))
+    def logs(self, sender, timestamp):
+        """Get today's chat logs page link."""
+        title = f"Project:Chat/Logs/{timestamp:%d %B %Y}"
+        if not self.client.open_page(title).content:
+            self.client.send_message(f"{sender}, I have not logged chat yet today.")
+            return
+
+        self.client.send_message(f"{sender}, today's chat logs are available [[{title}|here]].")
