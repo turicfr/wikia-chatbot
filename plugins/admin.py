@@ -73,8 +73,8 @@ class AdminPlugin:
 
         self.client.send_message(f"{sender}, I'll now listen to all messages from {target}.")
 
-    @Command(min_rank=Rank.MODERATOR, target=Argument(type=User))
-    def kick(self, target):
+    @Command(sender=Argument(implicit=True), target=Argument(type=User), min_rank=Rank.MODERATOR)
+    def kick(self, sender, target):
         """Kick a user."""
         if target == self.client.user:
             self.client.send_message(f"{sender}, I can't kick myself.")
