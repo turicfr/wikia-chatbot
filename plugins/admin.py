@@ -51,7 +51,7 @@ class AdminPlugin:
 
     @Command(sender=Argument(implicit=True), target=Argument(type=User), min_rank=Rank.MODERATOR)
     def unignore(self, sender, target):
-        """Enable bot commands and chat logging for a user."""
+        """Stop ignoring bot commands from a user."""
         if target == sender:
             self.client.send_message(f"{sender}, you can't unignore yourself.")
             return
