@@ -62,9 +62,7 @@ class ChatBot:
             }).json()
         if response["login"]["result"] != "Success":
             raise ClientError(f'Log in failed: {response["login"]["result"]}')
-        self.connect()
 
-    def connect(self):
         wikia_data = self.session.get(self.site + "wikia.php", params={
             "controller": "Chat",
             "format": "json",
