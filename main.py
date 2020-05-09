@@ -27,7 +27,7 @@ def main():
             config = json.load(file)
     except FileNotFoundError:
         logging.critical("Cannot read config.")
-        return 1
+        sys.exit(1)
     username = config["username"]
     password = config["password"]
     site = f'https://{config["wiki"]}.fandom.com/'
@@ -46,7 +46,7 @@ def main():
         bot.start()
     except ClientError as e:
         logging.critical(str(e))
-        return 1
+        sys.exit(1)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
