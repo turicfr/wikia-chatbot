@@ -1,7 +1,6 @@
 import json
 import logging
 from urllib.parse import urlencode, urlparse, urlunparse
-from datetime import datetime
 
 from .page import Page
 from .users import User, Rank, RankError
@@ -156,7 +155,9 @@ class ChatBot:
 
     def on_event(self, data):
         handler = {
+            "meta": lambda d: None,
             "initial": self.on_initial,
+            "updateUser": self.on_update_user,
             "join": self.on_join,
             "logout": self.on_logout,
             "part": self.on_logout,
@@ -164,8 +165,12 @@ class ChatBot:
             "ban": self.on_ban,
             "chat:add": self.on_message,
         }.get(data["event"])
-        if handler is not None:
-            handler(json.loads(data["data"]))
+        if handler is None:
+            self.logger.warning(f'Unhandled {data["event"]} event: {data}')
+            return
+        if not isinstance(data["data"], dict):
+            data["data"] = json.loads(data["data"])
+        handler(data["data"])
 
     def on_join(self, data):
         username = data["attrs"]["name"]
@@ -180,17 +185,22 @@ class ChatBot:
             except:
                 logger.exception("Failed on join.")
 
+    def update_user(self, attrs):
+        username = attrs["name"]
+        rank = Rank.from_attrs(attrs)
+        self.users[username.lower()] = User(username, rank)
+
     def on_initial(self, data):
         for user in data["collections"]["users"]["models"]:
-            attrs = user["attrs"]
-            username = attrs["name"]
-            rank = Rank.from_attrs(attrs)
-            self.users[username.lower()] = User(username, rank)
+            self.update_user(user["attrs"])
         for plugin, logger in self.plugins:
             try:
                 plugin.on_initial(data)
             except:
                 logger.exception("Failed on initial.")
+
+    def on_update_user(self, data):
+        self.update_user(data["attrs"])
 
     def on_logout(self, data):
         username = data["attrs"]["name"]
