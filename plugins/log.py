@@ -99,7 +99,7 @@ class LogPlugin:
         if self.last_edit is None:
             message += "I haven't updated the logs since I joined here."
         else:
-            message += f"I last updated the logs {(datetime.utcnow() - self.last_edit).total_seconds() / 60:.2f} minutes ago."
+            message += f"I last updated the logs ~{round((datetime.utcnow() - self.last_edit).total_seconds() / 60)} minutes ago."
         message += f" There are currently ~{lines} lines in the log buffer."
         self.client.send_message(message)
 
@@ -108,7 +108,10 @@ class LogPlugin:
         """Get today's chat logs page link."""
         title = f"Project:Chat/Logs/{timestamp:%d %B %Y}"
         if not self.client.open_page(title).content:
-            self.client.send_message(f"{sender}, I have not logged chat yet today.")
+            self.client.send_message(
+                f"{sender}, I have not logged chat yet today. "
+                "Logs from previous days are available [[Project:Chat/Logs|here]]."
+            )
             return
 
         self.client.send_message(f"{sender}, today's chat logs are available [[{title}|here]].")
