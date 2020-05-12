@@ -5,7 +5,7 @@ from chatbot.users import User
 from chatbot.plugins import Plugin, Command, Argument
 
 def format_timedelta(timedelta):
-    seconds = timedelta.total_seconds()
+    seconds = int(timedelta.total_seconds())
     days, seconds = divmod(seconds, 60 * 60 * 24)
     hours, seconds = divmod(seconds, 60 * 60)
     minutes, seconds = divmod(seconds, 60)
