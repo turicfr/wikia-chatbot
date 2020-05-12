@@ -105,8 +105,8 @@ class TellPlugin:
                     self.client.send_message(f"{sender}, I've got no message from you to {target}.")
                     return
 
-                text = " ".join(message["message"].split()[:5])
-                if len(message["message"].split()) > 5:
+                text = message["message"][:50]
+                if len(message["message"]) > 50:
                     text += "..."
                 delivered = message.get("delivered")
                 if delivered is None:
