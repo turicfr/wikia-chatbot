@@ -71,7 +71,7 @@ class LogPlugin:
             end = page.content.rindex("</pre>")
             page.content = page.content[:end] + log_data + page.content[end:]
         else:
-            page.content = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs|{timestamp:%Y %d %B}]]'
+            page.content = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs|{timestamp:%Y %m %d}]]'
         page.save("Updating chat logs")
         os.remove("chat.log")
         self.last_edit = datetime.utcnow()
