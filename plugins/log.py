@@ -1,4 +1,5 @@
 import os
+import re
 import html
 from datetime import datetime
 from threading import Timer
@@ -54,7 +55,7 @@ class LogPlugin:
 
     def on_message(self, data):
         username = data["attrs"]["name"]
-        message = data["attrs"]["text"]
+        message = re.sub(r"^\/me(?=\s)", f"* {username}", data["attrs"]["text"])
         timestamp = datetime.utcfromtimestamp(int(data["attrs"]["timeStamp"]) / 1000)
         self.log_file(message.splitlines(), f"{{timestamp}} <{username}> {{line}}", timestamp)
 
