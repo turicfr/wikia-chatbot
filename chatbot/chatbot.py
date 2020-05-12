@@ -227,6 +227,8 @@ class ChatBot:
                 logger.exception("Failed on ban.")
 
     def on_message(self, data):
+        if data["id"] is None:
+            return
         for plugin, logger in self.plugins:
             try:
                 plugin.on_message(data)
