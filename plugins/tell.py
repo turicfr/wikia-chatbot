@@ -84,7 +84,7 @@ class TellPlugin:
             response = []
             with self.open_tell(write=False) as tell:
                 for user, messages in tell.items():
-                    if list(filter(lambda m: m["from"] == sender.name, messages)):
+                    if list(filter(lambda m: m["from"] == sender.name and "delivered" not in m, messages)):
                         response.append(f"there is a message pending from you to {user}.")
             if not response:
                 response = ["you currently don't have tell messages to anyone."]
@@ -105,8 +105,8 @@ class TellPlugin:
                     self.client.send_message(f"{sender}, I've got no message from you to {target}.")
                     return
 
-                text = " ".join(message["message"].split()[:5])
-                if len(message["message"].split()) > 5:
+                text = message["message"][:50]
+                if len(message["message"]) > 50:
                     text += "..."
                 delivered = message.get("delivered")
                 if delivered is None:

@@ -1,4 +1,5 @@
 import os
+import re
 import html
 from datetime import datetime
 from threading import Timer
@@ -54,7 +55,7 @@ class LogPlugin:
 
     def on_message(self, data):
         username = data["attrs"]["name"]
-        message = data["attrs"]["text"]
+        message = re.sub(r"^\/me(?=\s)", f"* {username}", data["attrs"]["text"])
         timestamp = datetime.utcfromtimestamp(int(data["attrs"]["timeStamp"]) / 1000)
         self.log_file(message.splitlines(), f"{{timestamp}} <{username}> {{line}}", timestamp)
 
@@ -70,7 +71,7 @@ class LogPlugin:
             end = page.content.rindex("</pre>")
             page.content = page.content[:end] + log_data + page.content[end:]
         else:
-            page.content = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs|{timestamp:%Y %d %B}]]'
+            page.content = f'<pre class="ChatLog">\n{log_data}</pre>\n[[Category:Chat logs|{timestamp:%Y %m %d}]]'
         page.save("Updating chat logs")
         os.remove("chat.log")
         self.last_edit = datetime.utcnow()
@@ -99,7 +100,7 @@ class LogPlugin:
         if self.last_edit is None:
             message += "I haven't updated the logs since I joined here."
         else:
-            message += f"I last updated the logs {(datetime.utcnow() - self.last_edit).total_seconds() / 60:.2f} minutes ago."
+            message += f"I last updated the logs ~{round((datetime.utcnow() - self.last_edit).total_seconds() / 60)} minutes ago."
         message += f" There are currently ~{lines} lines in the log buffer."
         self.client.send_message(message)
 
@@ -108,7 +109,10 @@ class LogPlugin:
         """Get today's chat logs page link."""
         title = f"Project:Chat/Logs/{timestamp:%d %B %Y}"
         if not self.client.open_page(title).content:
-            self.client.send_message(f"{sender}, I have not logged chat yet today.")
+            self.client.send_message(
+                f"{sender}, I have not logged chat yet today. "
+                "Logs from previous days are available [[Project:Chat/Logs|here]]."
+            )
             return
 
         self.client.send_message(f"{sender}, today's chat logs are available [[{title}|here]].")

@@ -47,7 +47,7 @@ class AdminPlugin:
             with open("ignore.json", "w", encoding="utf-8") as ignore_file:
                 json.dump(ignore, ignore_file)
 
-        self.client.send_message(f"{sender}, I'll now ignore all messages from {target}.")
+        self.client.send_message(f"{sender}, I'll now ignore all commands from {target}.")
 
     @Command(sender=Argument(implicit=True), target=Argument(type=User), min_rank=Rank.MODERATOR)
     def unignore(self, sender, target):
@@ -71,7 +71,7 @@ class AdminPlugin:
             with open("ignore.json", "w", encoding="utf-8") as ignore_file:
                 json.dump(ignore, ignore_file)
 
-        self.client.send_message(f"{sender}, I'll now listen to all messages from {target}.")
+        self.client.send_message(f"{sender}, I'll now listen to all commands from {target}.")
 
     @Command(sender=Argument(implicit=True), target=Argument(type=User), min_rank=Rank.MODERATOR)
     def kick(self, sender, target):

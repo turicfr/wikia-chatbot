@@ -27,7 +27,10 @@ class YouTubePlugin:
                 "part": "snippet, statistics, contentDetails",
             }).json()["items"][0]
             duration = isodate.parse_duration(item["contentDetails"]["duration"])
-            published_at = datetime.strptime(item["snippet"]["publishedAt"], "%Y-%m-%dT%H:%M:%S.%fZ")
+            try:
+                published_at = datetime.strptime(item["snippet"]["publishedAt"], "%Y-%m-%dT%H:%M:%S.%fZ")
+            except ValueError:
+                published_at = datetime.strptime(item["snippet"]["publishedAt"], "%Y-%m-%dT%H:%M:%SZ")
             self.client.send_message(
                 f'YouTube: {item["snippet"]["title"]} \u2022 {duration} '
                 f'\u2022 by {item["snippet"]["channelTitle"]} on {published_at:%d %B, %Y} '
