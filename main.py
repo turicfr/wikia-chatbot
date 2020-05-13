@@ -15,31 +15,37 @@ from plugins.xo import XOPlugin
 from plugins.twitter import TwitterPlugin
 from plugins.youtube import YouTubePlugin
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-v", "--verbose", action="store_true")
-    args = parser.parse_args()
-
-    level = logging.NOTSET if args.verbose else logging.WARNING
-    logging.basicConfig(format="[%(levelname)s] %(name)s: %(message)s", level=level)
+def read_config():
     try:
         with open("config.json") as file:
-            config = json.load(file)
+            return json.load(file)
     except FileNotFoundError:
         logging.critical("Cannot read config.")
         sys.exit(1)
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-v", "--verbose", action="count", default=0)
+    args = parser.parse_args()
+
+    level = logging.NOTSET if args.verbose >= 1 else logging.WARNING
+    logging.basicConfig(format="[%(levelname)s] %(name)s: %(message)s", level=level)
+
+    config = read_config()
     username = config["username"]
     password = config["password"]
     site = f'https://{config["wiki"]}.fandom.com/'
-    bot = ChatBot(username, password, site)
-    bot.add_plugin(HelpPlugin())
-    bot.add_plugin(AdminPlugin())
-    bot.add_plugin(LogPlugin())
-    bot.add_plugin(SeenPlugin())
-    bot.add_plugin(TellPlugin())
-    bot.add_plugin(HelloPlugin())
-    bot.add_plugin(XOPlugin())
-    bot.add_plugin(TwitterPlugin())
+    bot = ChatBot(username, password, site, socketio_logger=args.verbose >= 2)
+    bot.add_plugins(
+        HelpPlugin(),
+        AdminPlugin(),
+        LogPlugin(),
+        SeenPlugin(),
+        TellPlugin(),
+        HelloPlugin(),
+        XOPlugin(),
+        TwitterPlugin(),
+    )
     if config.get("youtube"):
         bot.add_plugin(YouTubePlugin(config["youtube"]))
     try:

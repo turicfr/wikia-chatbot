@@ -13,7 +13,7 @@ class ClientError(Exception):
     pass
 
 class ChatBot:
-    def __init__(self, username, password, site):
+    def __init__(self, username, password, site, socketio_logger=False):
         self.username = username
         self.password = password
         self.site = site
@@ -21,8 +21,9 @@ class ChatBot:
         self.session = requests.Session()
         self.sio = socketio.Client()
         self.logger = logging.getLogger(__name__)
-        for handler in logging.root.handlers:
-            handler.addFilter(logging.Filter(__package__))
+        if not socketio_logger:
+            for handler in logging.root.handlers:
+                handler.addFilter(logging.Filter(__package__))
         for event, handler in {
             "connect": self.on_connect,
             "connect_error": self.on_connect_error,
@@ -41,6 +42,10 @@ class ChatBot:
             logger.exception("Failed to load.")
         else:
             self.plugins.append((plugin, logger))
+
+    def add_plugins(self, *plugins):
+        for plugin in plugins:
+            self.add_plugin(plugin)
 
     def start(self):
         if not self.plugins:
