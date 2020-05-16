@@ -1,5 +1,4 @@
 import os
-import re
 import html
 from datetime import datetime
 from threading import Timer
@@ -55,9 +54,15 @@ class LogPlugin:
 
     def on_message(self, data):
         username = data["attrs"]["name"]
-        message = re.sub(r"^\/me(?=\s)", f"* {username}", data["attrs"]["text"])
+        message = data["attrs"]["text"]
+        if message.startswith("/me "):
+            username_format = f"* {username}"
+            message = message[len("/me "):]
+        else:
+            username_format = f"<{username}>"
+        message = message.lstrip()
         timestamp = datetime.utcfromtimestamp(int(data["attrs"]["timeStamp"]) / 1000)
-        self.log_file(message.splitlines(), f"{{timestamp}} <{username}> {{line}}", timestamp)
+        self.log_file(message.splitlines(), f"{{timestamp}} {username_format} {{line}}", timestamp)
 
     def log_wiki(self, timestamp):
         try:
