@@ -140,8 +140,11 @@ class ChatBot:
             except:
                 logger.exception("Failed on connect.")
 
-    def on_connect_error(self):
-        self.logger.info("Connection error.")
+    def on_connect_error(self, *data):
+        if data:
+            self.logger.info(f"Connection error: {', '.join(data)}.")
+        else:
+            self.logger.info("Connection error.")
         for plugin, logger in self.plugins:
             try:
                 plugin.on_connect_error()
