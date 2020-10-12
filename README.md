@@ -5,9 +5,15 @@ An automated tool for connecting to Wikia's chat feature written in Python.
 ## Requirements
 
 * Python 3.6+
-* [requests](https://pypi.org/project/requests/)
-* [python-socketio](https://pypi.org/project/python-socketio/)
-* [isodate](https://pypi.org/project/isodate/) for YouTubePlugin
+* [`requests`](https://pypi.org/project/requests/)
+* [`python-socketio`](https://pypi.org/project/python-socketio/)
+* [`isodate`](https://pypi.org/project/isodate/) for [`YouTubePlugin`](/plugins/youtube.py)
+
+Or simply run:
+
+```sh
+python -m pip install -r requirements.txt
+```
 
 ## Usage
 
